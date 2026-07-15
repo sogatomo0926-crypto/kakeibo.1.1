@@ -560,34 +560,15 @@
             <button id="add-500-btn" class="coin-btn">🪙 お財布から500円玉貯金へ移す (+500円)</button>
         </div>
 
-        <!-- 💰 給料（収入）の登録と自動配分 -->
-        <h3>💰 給料・収入を登録する</h3>
-        <form id="salary-form" style="background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px;">
-            <div class="form-group">
-                <label for="salary-amount">今月の給料・収入金額 (円)</label>
-                <input type="number" id="salary-amount" placeholder="例: 200000" required inputmode="numeric">
-            </div>
-            <button type="submit" style="background-color: #8ca184;">給料を入力して貯金に反映</button>
-        </form>
-
-       
-        <!-- 🎯 目標貯金額の設定 -->
-        <h3>🎯 各項目の貯金目標を設定する</h3>
-        <form id="target-settings-form" style="background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px;">
-            <div class="form-group">
-                <label for="target-type">目標を設定する項目</label>
-                <select id="target-type" required>
-                    <option value="bank">🏦 銀行口座の目標額</option>
-                    <option value="wallet">👛 お財布現金の目標額</option>
-                    <option value="coin">🪙 500円玉貯金の目標額</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="target-amount">目標金額 (円)</label>
-                <input type="number" id="target-amount" placeholder="例: 100000" required inputmode="numeric">
-            </div>
-            <button type="submit" style="background-color: #9d8ea8;">目標金額を設定する</button>
-        </form>
+       <!-- 💰 給料（収入）の登録 -->
+<h3>💰 給料・収入を登録する</h3>
+<form id="salary-form" style="background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px;">
+    <div class="form-group">
+        <label for="salary-amount">今月の給料・収入金額 (円)</label>
+        <input type="number" id="salary-amount" placeholder="例: 200000" required inputmode="numeric">
+    </div>
+    <button type="submit" style="background-color: #8ca184;">給料を入力して貯金に反映</button>
+</form>
 
         <!-- ⚙ 各残高の手動更新 -->
         <h3>⚙ 貯金額・手元資金の初期設定</h3>
@@ -810,6 +791,20 @@
         currentDate.setDate(currentDate.getDate() + daysToAdjust);
         dateInput.value = formatDate(currentDate);
     }
+
+    // 📝 給料をそのまま銀行残高（貯蓄）に加算するシンプルな処理
+document.getElementById('salary-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const salaryAmt = Number(document.getElementById('salary-amount').value);
+    if (salaryAmt <= 0) return;
+
+    // 給料全額を銀行残高にそのままプラスする
+    mySavingsBank += salaryAmt; 
+
+    document.getElementById('salary-amount').value = '';
+    alert(`給料（${salaryAmt.toLocaleString()}円）を銀行残高に追加しました！`);
+    updateUI(); // 画面の表示を最新にする
+});
 
     // --- ローカルストレージ連動型データ初期化 ---
     let kakeiboData = JSON.parse(localStorage.getItem('kakeiboData')) || [];
@@ -1237,52 +1232,8 @@
             updateUI();
         }
     }
-
-    // 給料・配分処理
-    document.getElementById('salary-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const salaryAmt = Number(document.getElementById('salary-amount').value);
-        if (salaryAmt <= 0) return;
-
-        let walletAlloc = 0;
-        let bankAlloc = 0;
-
-        if (salaryAllocationType === 'percent') {
-            walletAlloc = Math.round(salaryAmt * (salaryAllocationValue / 100));
-        } else {
-            walletAlloc = salaryAllocationValue;
-        }
-
-        bankAlloc = salaryAmt - walletAlloc;
-
-        if (bankAlloc < 0) {
-            alert('お財布への配分金額が、入力された給与金額を超えています。');
-            return;
-        }
-
-        mySavingsBank += bankAlloc;
-        mySavingsWallet += walletAlloc;
-
-        document.getElementById('salary-amount').value = '';
-        alert(`給料（${salaryAmt.toLocaleString()}円）を自動配分しました！\n🏦 銀行口座: +${bankAlloc.toLocaleString()}円\n👛 お財布現金: +${walletAlloc.toLocaleString()}円`);
-        updateUI();
-    });
-
-       // 各目標額の設定
-    document.getElementById('target-settings-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const type = document.getElementById('target-type').value;
-        const amt = Number(document.getElementById('target-amount').value);
-
-        if (type === 'bank') targetBank = amt;
-        if (type === 'wallet') targetWallet = amt;
-        if (type === 'coin') targetCoin = amt;
-
-        document.getElementById('target-amount').value = '';
-        alert('目標金額を設定しました。');
-        updateUI();
-    });
-
+ 
+    
     // 手元の初期残高設定
     document.getElementById('savings-form').addEventListener('submit', function(e) {
         e.preventDefault();
