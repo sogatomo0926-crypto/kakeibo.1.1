@@ -396,27 +396,35 @@
         }
 
         /* カテゴリ管理設定リスト */
-        .category-manage-list {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 16px 0;
-        }
-        .category-manage-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 12px;
-            background: var(--bg-primary);
-            border-radius: 8px;
-            margin-bottom: 6px;
-            border: 2px solid var(--border-color);
-            border-left: 4px solid var(--accent-blue);
-        }
-        .category-manage-item span {
-            font-size: 13px;
-            color: var(--text-main);
-            font-weight: 700;
-        }
+.category-manage-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px 0;
+}
+.category-manage-item {
+    display: flex;
+    justify-content: space-between; /* 左に名前、右に削除ボタンを綺麗に配置 */
+    align-items: center;
+    padding: 10px 14px; /* 左右の余白を少し広げてゆとりを持たせる */
+    background: var(--bg-primary);
+    border-radius: 8px;
+    margin-bottom: 8px; /* 項目間の隙間を少し広げて見やすく */
+    border: 1px solid var(--border-color); /* 全体の枠線は細めの1pxが綺麗 */
+    border-left: 4px solid var(--accent-blue); /* 左のアクセントだけ太く目立たせる */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* ほんの少し影をつけると立体感が出ます */
+    transition: all 0.2s ease; /* マウスを乗せた時の動きを滑らかに */
+}
+
+/* リストの最後の項目だけは下の隙間をなくす */
+.category-manage-item:last-child {
+    margin-bottom: 0;
+}
+
+.category-manage-item span {
+    font-size: 14px; /* 13pxだと少し小さいので14pxに微調整 */
+    color: var(--text-main);
+    font-weight: 600; /* 700(極太)より600(中太)の方がスマートに見えます */
+}
 
         /* 詳細スケジュール用スタイル */
         .schedule-box {
@@ -458,6 +466,9 @@
                     <button type="button" class="date-adjust-btn" style="background-color: #7a9eb5; color: white; padding: 4px 8px; font-size: 12px;" onclick="resetToToday()">今日に戻す</button>
                 </div>
             </div>
+            
+            
+
             <div class="form-group">
                 <label for="category">カテゴリ</label>
                 <select id="category" required>
@@ -477,6 +488,11 @@
                 <label for="amount">金額 (円)</label>
                 <input type="number" id="amount" placeholder="金額を入力" required inputmode="numeric">
             </div>
+            <div class="form-group" style="margin-bottom: 15px;">
+    <label for="memo">メモ・詳細（任意）</label>
+    <input type="text" id="memo" placeholder="例: スタバ、電気代など" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+</div>
+            
             <button type="submit">記録する</button>
         </form>
 
@@ -757,159 +773,162 @@
 </button>
 
 <script>
-    // --- ページ切り替え機能 ---
-    function switchPage(pageId) {
-        document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+// --- ページ切り替え機能 ---
+function switchPage(pageId) {
+    document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
 
-        document.getElementById(`page-${pageId}`).classList.add('active');
-        
-        const labels = { 'kakeibo': '家計簿', 'savings': '貯金', 'credit': 'クレカ' };
-        const eventTarget = [...document.querySelectorAll('.nav-item')].find(item => item.textContent.includes(labels[pageId]));
-        if (eventTarget) eventTarget.classList.add('active');
+    const targetPage = document.getElementById(`page-${pageId}`);
+    if (targetPage) {
+        targetPage.classList.add('active');
     }
-
-    // --- 📅 日付の自動設定 ＆ 調整機能 ---
-    function formatDate(dateObj) {
-        const yyyy = dateObj.getFullYear();
-        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const dd = String(dateObj.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
+    
+    const labels = { 'kakeibo': '家計簿', 'savings': '貯金', 'credit': 'クレカ' };
+    const eventTarget = [...document.querySelectorAll('.nav-item')].find(item => item.textContent.includes(labels[pageId]));
+    if (eventTarget) {
+        eventTarget.classList.add('active');
     }
+}
 
-    function resetToToday() {
+// --- 📅 日付の自動設定 ＆ 調整機能 ---
+function formatDate(dateObj) {
+    const yyyy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+function resetToToday() {
+    const dateInput = document.getElementById('date');
+    if (dateInput) {
         const today = new Date();
-        document.getElementById('date').value = formatDate(today);
+        dateInput.value = formatDate(today);
     }
+}
 
-    function adjustDate(daysToAdjust) {
-        const dateInput = document.getElementById('date');
-        let currentDate = new Date(dateInput.value);
-        if (isNaN(currentDate.getTime())) {
-            currentDate = new Date();
-        }
-        currentDate.setDate(currentDate.getDate() + daysToAdjust);
-        dateInput.value = formatDate(currentDate);
+function adjustDate(daysToAdjust) {
+    const dateInput = document.getElementById('date');
+    if (!dateInput) return;
+    
+    let currentDate = new Date(dateInput.value);
+    if (isNaN(currentDate.getTime())) {
+        currentDate = new Date();
     }
+    currentDate.setDate(currentDate.getDate() + daysToAdjust);
+    dateInput.value = formatDate(currentDate);
+}
 
-    // 📝 給料をそのまま銀行残高（貯蓄）に加算するシンプルな処理
-document.getElementById('salary-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const salaryAmt = Number(document.getElementById('salary-amount').value);
-    if (salaryAmt <= 0) return;
+// --- データ初期化 & 安全な定義 ---
 
-    // 給料全額を銀行残高にそのままプラスする
-    mySavingsBank += salaryAmt; 
+// 1. 家計簿・カテゴリデータ
+let kakeiboData = JSON.parse(localStorage.getItem('kakeiboData')) || [];
+let myCategories = JSON.parse(localStorage.getItem('myCategories')) || ['食費', '日用品', '交際費', '交通費', 'その他'];
 
-    document.getElementById('salary-amount').value = '';
-    alert(`給料（${salaryAmt.toLocaleString()}円）を銀行残高に追加しました！`);
-    updateUI(); // 画面の表示を最新にする
-});
+// 2. 貯金口座残高データ
+let mySavingsBank = Number(localStorage.getItem('mySavingsBank')) || 100000;       
+let mySavingsWallet = Number(localStorage.getItem('mySavingsWallet')) || 10000;     
+let mySavingsCoin = Number(localStorage.getItem('mySavingsCoin')) || 0;       
 
-    // --- ローカルストレージ連動型データ初期化 ---
-    let kakeiboData = JSON.parse(localStorage.getItem('kakeiboData')) || [];
-    let myCategories = JSON.parse(localStorage.getItem('myCategories')) || ['食費', '日用品', '交際費', '交通費', 'その他'];
+// 3. 貯金目標金額（エラー防止のため初期値付きで正しく定義）
+let targetBank = Number(localStorage.getItem('targetBank')) || 500000;
+let targetWallet = Number(localStorage.getItem('targetWallet')) || 50000;
+let targetCoin = Number(localStorage.getItem('targetCoin')) || 10000;
 
-    // 貯金データ
-    let mySavingsBank = Number(localStorage.getItem('mySavingsBank')) || 100000;       
-    let mySavingsWallet = Number(localStorage.getItem('mySavingsWallet')) || 10000;     
-    let mySavingsCoin = Number(localStorage.getItem('mySavingsCoin')) || 0;       
+// 4. 給料自動振り分け用設定（未実装・将来拡張用を考慮して宣言）
+let salaryAllocationType = localStorage.getItem('salaryAllocationType') || 'ratio';
+let salaryAllocationValue = Number(localStorage.getItem('salaryAllocationValue')) || 100;
 
-    // 貯金の目標設定
-    let targetBank = Number(localStorage.getItem('targetBank')) || 500000;
-    let targetWallet = Number(localStorage.getItem('targetWallet')) || 30000;
-    let targetCoin = Number(localStorage.getItem('targetCoin')) || 50000;
+// 5. クレカ設定
+let jcbLimit = Number(localStorage.getItem('jcbLimit')) || 300000;
+let jcbRevoRemaining = Number(localStorage.getItem('jcbRevoRemaining')) || 0;
+let jcbClosingDay = Number(localStorage.getItem('jcbClosingDay')) || 15; // 15日締め
+let jcbPayday = Number(localStorage.getItem('jcbPayday')) || 10;          // 翌月10日払い
 
-    // 給料自動配分設定
-    let salaryAllocationType = localStorage.getItem('salaryAllocationType') || 'percent';
-    let salaryAllocationValue = Number(localStorage.getItem('salaryAllocationValue')) || 10;       
+let paypayLimit = Number(localStorage.getItem('paypayLimit')) || 300000;
+let paypayRevoRemaining = Number(localStorage.getItem('paypayRevoRemaining')) || 0;
+let paypayClosingDay = Number(localStorage.getItem('paypayClosingDay')) || 99; // 99は月末締め
+let paypayPayday = Number(localStorage.getItem('paypayPayday')) || 27;         // 翌月27日払い
 
-    // クレカ初期設定（締め日・引き落とし日ルール）
-    let jcbLimit = Number(localStorage.getItem('jcbLimit')) || 300000;
-    let jcbRevoRemaining = Number(localStorage.getItem('jcbRevoRemaining')) || 0;
-    let jcbClosingDay = Number(localStorage.getItem('jcbClosingDay')) || 15; // 毎月15日締め
-    let jcbPayday = Number(localStorage.getItem('jcbPayday')) || 10;      // 翌月10日払い
-
-    let paypayLimit = Number(localStorage.getItem('paypayLimit')) || 300000;
-    let paypayRevoRemaining = Number(localStorage.getItem('paypayRevoRemaining')) || 0;
-    let paypayClosingDay = Number(localStorage.getItem('paypayClosingDay')) || 99; // 99は末日を指す
-    let paypayPayday = Number(localStorage.getItem('paypayPayday')) || 27;     // 翌月27日払い
-
-    // 履歴フィルター
-    let currentFilter = 'this-month';
-
-    const paymentLabels = {
-        'jcb': 'JCBカード',
-        'paypay': 'PayPayカード',
-        'bank': '口座から直接送金',
-        'cash': '現金'
+// 💡 存在しない関数の呼び出しエラーを防ぐための安全弁（ダミー定義）
+if (typeof toggleAllocationInputLabel !== 'function') {
+    window.toggleAllocationInputLabel = function() {
+        console.log("toggleAllocationInputLabelはスキップされました。");
     };
+}
 
-    // ローカルストレージにデータを保存する関数
-    function saveData() {
-        localStorage.setItem('kakeiboData', JSON.stringify(kakeiboData));
-        localStorage.setItem('myCategories', JSON.stringify(myCategories));
-        localStorage.setItem('mySavingsBank', mySavingsBank);
-        localStorage.setItem('mySavingsWallet', mySavingsWallet);
-        localStorage.setItem('mySavingsCoin', mySavingsCoin);
-        localStorage.setItem('targetBank', targetBank);
-        localStorage.setItem('targetWallet', targetWallet);
-        localStorage.setItem('targetCoin', targetCoin);
-        localStorage.setItem('salaryAllocationType', salaryAllocationType);
-        localStorage.setItem('salaryAllocationValue', salaryAllocationValue);
-        localStorage.setItem('jcbLimit', jcbLimit);
-        localStorage.setItem('jcbRevoRemaining', jcbRevoRemaining);
-        localStorage.setItem('jcbClosingDay', jcbClosingDay);
-        localStorage.setItem('jcbPayday', jcbPayday);
-        localStorage.setItem('paypayLimit', paypayLimit);
-        localStorage.setItem('paypayRevoRemaining', paypayRevoRemaining);
-        localStorage.setItem('paypayClosingDay', paypayClosingDay);
-        localStorage.setItem('paypayPayday', paypayPayday);
-    }
+// 履歴フィルター
+let currentFilter = 'this-month';
 
-    // --- 📅 引き落とし対象日の自動判定ロジック ---
-    // 利用日(dateStr)をもとに、その利用分がいつ引き落とされるかを年月（Dateオブジェクトの1日）で返す
-    function getBillingMonth(dateStr, closingDay, payday) {
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return new Date();
+const paymentLabels = {
+    'jcb': 'JCBカード',
+    'paypay': 'PayPayカード',
+    'bank': '口座から直接送金',
+    'cash': '現金'
+};
 
-        const year = d.getFullYear();
-        const month = d.getMonth(); // 0-11
-        const day = d.getDate();
+// ローカルストレージにデータを保存する関数
+function saveData() {
+    localStorage.setItem('kakeiboData', JSON.stringify(kakeiboData));
+    localStorage.setItem('myCategories', JSON.stringify(myCategories));
+    localStorage.setItem('mySavingsBank', mySavingsBank);
+    localStorage.setItem('mySavingsWallet', mySavingsWallet);
+    localStorage.setItem('mySavingsCoin', mySavingsCoin);
+    localStorage.setItem('targetBank', targetBank);
+    localStorage.setItem('targetWallet', targetWallet);
+    localStorage.setItem('targetCoin', targetCoin);
+    localStorage.setItem('salaryAllocationType', salaryAllocationType);
+    localStorage.setItem('salaryAllocationValue', salaryAllocationValue);
+    localStorage.setItem('jcbLimit', jcbLimit);
+    localStorage.setItem('jcbRevoRemaining', jcbRevoRemaining);
+    localStorage.setItem('jcbClosingDay', jcbClosingDay);
+    localStorage.setItem('jcbPayday', jcbPayday);
+    localStorage.setItem('paypayLimit', paypayLimit);
+    localStorage.setItem('paypayRevoRemaining', paypayRevoRemaining);
+    localStorage.setItem('paypayClosingDay', paypayClosingDay);
+    localStorage.setItem('paypayPayday', paypayPayday);
+}
 
-        let billingYear = year;
-        let billingMonth = month;
+// --- 📅 引き落とし対象日の自動判定ロジック ---
+function getBillingMonth(dateStr, closingDay, payday) {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return new Date();
 
-        // 締め日設定（99は月末締め）
-        const isEndMonth = (closingDay === 99);
-        
-        if (isEndMonth) {
-            // 月末締め：その月（month）の利用分はすべて「翌月」払い
-            billingMonth = month + 1;
+    const year = d.getFullYear();
+    const month = d.getMonth(); // 0-11
+    const day = d.getDate();
+
+    let billingYear = year;
+    let billingMonth = month;
+
+    const isEndMonth = (closingDay === 99);
+    
+    if (isEndMonth) {
+        billingMonth = month + 1;
+    } else {
+        if (day > closingDay) {
+            billingMonth = month + 2;
         } else {
-            // 指定日締め：その月の「締め日より後」の利用は「翌々月」払いになる
-            if (day > closingDay) {
-                billingMonth = month + 2;
-            } else {
-                billingMonth = month + 1;
-            }
+            billingMonth = month + 1;
         }
-
-        if (billingMonth > 11) {
-            billingYear += Math.floor(billingMonth / 12);
-            billingMonth = billingMonth % 12;
-        }
-
-        return new Date(billingYear, billingMonth, 1);
     }
 
-    // --- UIアップデート ＆ 表示機能 ---
-    function updateUI() {
-        saveData();
+    if (billingMonth > 11) {
+        billingYear += Math.floor(billingMonth / 12);
+        billingMonth = billingMonth % 12;
+    }
 
-        // 1. カテゴリセレクトボックスと管理リストの更新
-        const categorySelect = document.getElementById('category');
-        const prevSelected = categorySelect.value;
+    return new Date(billingYear, billingMonth, 1);
+}
+
+// --- UIアップデート ＆ 表示機能 ---
+function updateUI() {
+    saveData();
+
+    // 1. カテゴリセレクトボックスと管理リストの更新
+    const categorySelect = document.getElementById('category');
+    if (categorySelect) {
+        const prevSelected = (categorySelect.options && categorySelect.options.length > 0) ? categorySelect.value : '';
+        
         categorySelect.innerHTML = '';
         myCategories.forEach(cat => {
             const opt = document.createElement('option');
@@ -917,11 +936,15 @@ document.getElementById('salary-form').addEventListener('submit', function(e) {
             opt.textContent = cat;
             categorySelect.appendChild(opt);
         });
-        if (myCategories.includes(prevSelected)) {
+        
+        if (prevSelected && myCategories.includes(prevSelected)) {
             categorySelect.value = prevSelected;
         }
+    }
 
-        const categoryManageList = document.getElementById('category-manage-list');
+    // カテゴリ管理リストの更新
+    const categoryManageList = document.getElementById('category-manage-list');
+    if (categoryManageList) {
         categoryManageList.innerHTML = '';
         myCategories.forEach((cat, idx) => {
             const li = document.createElement('li');
@@ -932,70 +955,87 @@ document.getElementById('salary-form').addEventListener('submit', function(e) {
             `;
             categoryManageList.appendChild(li);
         });
+    }
 
-        // 2. クレカ設定入力項目の初期表示反映
-        document.getElementById('jcb-closing-day-display').textContent = `毎月 ${jcbClosingDay === 99 ? '末' : jcbClosingDay} 日`;
-        document.getElementById('jcb-payday-display').textContent = `毎月 ${jcbPayday} 日 (翌月)`;
-        document.getElementById('paypay-closing-day-display').textContent = `毎月 ${paypayClosingDay === 99 ? '末' : paypayClosingDay} 日`;
-        document.getElementById('paypay-payday-display').textContent = `毎月 ${paypayPayday} 日 (翌月)`;
+    // 2. クレカ設定入力項目の初期表示反映
+    const jcbClosingDisplay = document.getElementById('jcb-closing-day-display');
+    const jcbPaydayDisplay = document.getElementById('jcb-payday-display');
+    const paypayClosingDisplay = document.getElementById('paypay-closing-day-display');
+    const paypayPaydayDisplay = document.getElementById('paypay-payday-display');
 
-        // 3. クレカ計算処理
-        let jcbSpentThis = 0; // 次回請求対象分
-        let jcbSpentNext = 0; // 次々回請求対象分
-        let paypaySpentThis = 0;
-        let paypaySpentNext = 0;
+    if (jcbClosingDisplay) jcbClosingDisplay.textContent = `毎月 ${jcbClosingDay === 99 ? '末' : jcbClosingDay} 日`;
+    if (jcbPaydayDisplay) jcbPaydayDisplay.textContent = `毎月 ${jcbPayday} 日 (翌月)`;
+    if (paypayClosingDisplay) paypayClosingDisplay.textContent = `毎月 ${paypayClosingDay === 99 ? '末' : paypayClosingDay} 日`;
+    if (paypayPaydayDisplay) paypayPaydayDisplay.textContent = `毎月 ${paypayPayday} 日 (翌月)`;
 
-        const today = new Date();
-        // 現在基準の次回・次々回の支払い予定年月
-        const nextPayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1); // 翌月
-        const afterNextPayMonth = new Date(today.getFullYear(), today.getMonth() + 2, 1); // 翌々月
+    // 3. クレカ計算処理
+    let jcbSpentThis = 0; 
+    let jcbSpentNext = 0; 
+    let paypaySpentThis = 0;
+    let paypaySpentNext = 0;
 
-        // 引き落とし日ラベルの日付を適用
-        document.getElementById('jcb-schedule-date-1').textContent = `${nextPayMonth.getMonth() + 1}/${jcbPayday}`;
-        document.getElementById('jcb-schedule-date-2').textContent = `${afterNextPayMonth.getMonth() + 1}/${jcbPayday}`;
-        document.getElementById('paypay-schedule-date-1').textContent = `${nextPayMonth.getMonth() + 1}/${paypayPayday}`;
-        document.getElementById('paypay-schedule-date-2').textContent = `${afterNextPayMonth.getMonth() + 1}/${paypayPayday}`;
+    const today = new Date();
+    const nextPayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1); 
+    const afterNextPayMonth = new Date(today.getFullYear(), today.getMonth() + 2, 1); 
 
-        kakeiboData.forEach(item => {
-            const amt = Number(item.amount);
-            if (item.payment === 'jcb') {
-                const billDate = getBillingMonth(item.date, jcbClosingDay, jcbPayday);
-                if (billDate.getFullYear() === nextPayMonth.getFullYear() && billDate.getMonth() === nextPayMonth.getMonth()) {
-                    jcbSpentThis += amt;
-                } else if (billDate.getFullYear() === afterNextPayMonth.getFullYear() && billDate.getMonth() === afterNextPayMonth.getMonth()) {
-                    jcbSpentNext += amt;
-                }
-            } else if (item.payment === 'paypay') {
-                const billDate = getBillingMonth(item.date, paypayClosingDay, paypayPayday);
-                if (billDate.getFullYear() === nextPayMonth.getFullYear() && billDate.getMonth() === nextPayMonth.getMonth()) {
-                    paypaySpentThis += amt;
-                } else if (billDate.getFullYear() === afterNextPayMonth.getFullYear() && billDate.getMonth() === afterNextPayMonth.getMonth()) {
-                    paypaySpentNext += amt;
-                }
+    // 引き落とし日ラベルの反映
+    const jcbScheduleDate1 = document.getElementById('jcb-schedule-date-1');
+    const jcbScheduleDate2 = document.getElementById('jcb-schedule-date-2');
+    const paypayScheduleDate1 = document.getElementById('paypay-schedule-date-1');
+    const paypayScheduleDate2 = document.getElementById('paypay-schedule-date-2');
+
+    if (jcbScheduleDate1) jcbScheduleDate1.textContent = `${nextPayMonth.getMonth() + 1}/${jcbPayday}`;
+    if (jcbScheduleDate2) jcbScheduleDate2.textContent = `${afterNextPayMonth.getMonth() + 1}/${jcbPayday}`;
+    if (paypayScheduleDate1) paypayScheduleDate1.textContent = `${nextPayMonth.getMonth() + 1}/${paypayPayday}`;
+    if (paypayScheduleDate2) paypayScheduleDate2.textContent = `${afterNextPayMonth.getMonth() + 1}/${paypayPayday}`;
+
+    kakeiboData.forEach(item => {
+        const amt = Number(item.amount);
+        if (item.payment === 'jcb') {
+            const billDate = getBillingMonth(item.date, jcbClosingDay, jcbPayday);
+            if (billDate.getFullYear() === nextPayMonth.getFullYear() && billDate.getMonth() === nextPayMonth.getMonth()) {
+                jcbSpentThis += amt;
+            } else if (billDate.getFullYear() === afterNextPayMonth.getFullYear() && billDate.getMonth() === afterNextPayMonth.getMonth()) {
+                jcbSpentNext += amt;
             }
-        });
+        } else if (item.payment === 'paypay') {
+            const billDate = getBillingMonth(item.date, paypayClosingDay, paypayPayday);
+            if (billDate.getFullYear() === nextPayMonth.getFullYear() && billDate.getMonth() === nextPayMonth.getMonth()) {
+                paypaySpentThis += amt;
+            } else if (billDate.getFullYear() === afterNextPayMonth.getFullYear() && billDate.getMonth() === afterNextPayMonth.getMonth()) {
+                paypaySpentNext += amt;
+            }
+        }
+    });
 
-        const jcbTotal = jcbSpentThis + jcbSpentNext + jcbRevoRemaining;
-        const jcbAvailable = Math.max(0, jcbLimit - jcbTotal);
-        const paypayTotal = paypaySpentThis + paypaySpentNext + paypayRevoRemaining;
-        const paypayAvailable = Math.max(0, paypayLimit - paypayTotal);
+    const jcbTotal = jcbSpentThis + jcbSpentNext + jcbRevoRemaining;
+    const jcbAvailable = Math.max(0, jcbLimit - jcbTotal);
+    const paypayTotal = paypaySpentThis + paypaySpentNext + paypayRevoRemaining;
+    const paypayAvailable = Math.max(0, paypayLimit - paypayTotal);
 
-        document.getElementById('jcb-revo-display').textContent = jcbRevoRemaining.toLocaleString() + '円';
-        document.getElementById('jcb-total-display').textContent = jcbTotal.toLocaleString() + '円';
-        document.getElementById('jcb-limit-display').textContent = jcbLimit.toLocaleString() + '円';
-        document.getElementById('jcb-available-display').textContent = jcbAvailable.toLocaleString() + '円';
-        document.getElementById('jcb-schedule-amount-1').textContent = jcbSpentThis.toLocaleString() + '円';
-        document.getElementById('jcb-schedule-amount-2').textContent = jcbSpentNext.toLocaleString() + '円';
+    // 各種クレジット表示用IDの更新
+    const updateText = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    };
 
-        document.getElementById('paypay-revo-display').textContent = paypayRevoRemaining.toLocaleString() + '円';
-        document.getElementById('paypay-total-display').textContent = paypayTotal.toLocaleString() + '円';
-        document.getElementById('paypay-limit-display').textContent = paypayLimit.toLocaleString() + '円';
-        document.getElementById('paypay-available-display').textContent = paypayAvailable.toLocaleString() + '円';
-        document.getElementById('paypay-schedule-amount-1').textContent = paypaySpentThis.toLocaleString() + '円';
-        document.getElementById('paypay-schedule-amount-2').textContent = paypaySpentNext.toLocaleString() + '円';
+    updateText('jcb-revo-display', jcbRevoRemaining.toLocaleString() + '円');
+    updateText('jcb-total-display', jcbTotal.toLocaleString() + '円');
+    updateText('jcb-limit-display', jcbLimit.toLocaleString() + '円');
+    updateText('jcb-available-display', jcbAvailable.toLocaleString() + '円');
+    updateText('jcb-schedule-amount-1', jcbSpentThis.toLocaleString() + '円');
+    updateText('jcb-schedule-amount-2', jcbSpentNext.toLocaleString() + '円');
 
-        // 4. 引き落とし警告アラートの表示
-        const alertArea = document.getElementById('credit-alert-area');
+    updateText('paypay-revo-display', paypayRevoRemaining.toLocaleString() + '円');
+    updateText('paypay-total-display', paypayTotal.toLocaleString() + '円');
+    updateText('paypay-limit-display', paypayLimit.toLocaleString() + '円');
+    updateText('paypay-available-display', paypayAvailable.toLocaleString() + '円');
+    updateText('paypay-schedule-amount-1', paypaySpentThis.toLocaleString() + '円');
+    updateText('paypay-schedule-amount-2', paypaySpentNext.toLocaleString() + '円');
+
+    // 4. 引き落とし警告アラートの表示
+    const alertArea = document.getElementById('credit-alert-area');
+    if (alertArea) {
         alertArea.innerHTML = '';
         let totalIncomingWithdrawal = jcbSpentThis + paypaySpentThis;
         if (totalIncomingWithdrawal > mySavingsBank) {
@@ -1014,153 +1054,186 @@ document.getElementById('salary-form').addEventListener('submit', function(e) {
                 </div>
             `;
         }
-
-        // 5. 貯金データの表示
-        const totalSavings = mySavingsBank + mySavingsWallet + mySavingsCoin;
-        document.getElementById('savings-total-display').textContent = totalSavings.toLocaleString() + '円';
-        document.getElementById('savings-bank-display').textContent = mySavingsBank.toLocaleString() + '円';
-        document.getElementById('savings-wallet-display').textContent = mySavingsWallet.toLocaleString() + '円';
-        document.getElementById('savings-coin-display').textContent = mySavingsCoin.toLocaleString() + '円';
-        document.getElementById('savings-coin-count').textContent = Math.floor(mySavingsCoin / 500) + '枚';
-
-        document.getElementById('target-bank-val').textContent = targetBank.toLocaleString() + '円';
-        document.getElementById('target-wallet-val').textContent = targetWallet.toLocaleString() + '円';
-        document.getElementById('target-coin-val').textContent = targetCoin.toLocaleString() + '円';
-
-        // プログレスバー反映
-        const pctBank = targetBank > 0 ? Math.min(100, Math.round((mySavingsBank / targetBank) * 100)) : 0;
-        const pctWallet = targetWallet > 0 ? Math.min(100, Math.round((mySavingsWallet / targetWallet) * 100)) : 0;
-        const pctCoin = targetCoin > 0 ? Math.min(100, Math.round((mySavingsCoin / targetCoin) * 100)) : 0;
-
-        document.getElementById('pct-bank').textContent = pctBank + '%';
-        document.getElementById('pct-wallet').textContent = pctWallet + '%';
-        document.getElementById('pct-coin').textContent = pctCoin + '%';
-
-        document.getElementById('bar-bank').style.width = pctBank + '%';
-        document.getElementById('bar-wallet').style.width = pctWallet + '%';
-        document.getElementById('bar-coin').style.width = pctCoin + '%';
-
-        // 6. 履歴リスト＆分析の表示
-        renderHistory();
-        renderAnalysis();
     }
 
-    // --- 履歴レンダリング ---
-    function renderHistory() {
-        const listContainer = document.getElementById('history-list');
-        listContainer.innerHTML = '';
+    // 5. 貯金データの表示
+    const totalSavings = mySavingsBank + mySavingsWallet + mySavingsCoin;
+    updateText('savings-total-display', totalSavings.toLocaleString() + '円');
+    updateText('savings-bank-display', mySavingsBank.toLocaleString() + '円');
+    updateText('savings-wallet-display', mySavingsWallet.toLocaleString() + '円');
+    updateText('savings-coin-display', mySavingsCoin.toLocaleString() + '円');
+    
+    const coinCountEl = document.getElementById('savings-coin-count');
+    if (coinCountEl) coinCountEl.textContent = Math.floor(mySavingsCoin / 500) + '枚';
 
-        const now = new Date();
-        const thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    updateText('target-bank-val', targetBank.toLocaleString() + '円');
+    updateText('target-wallet-val', targetWallet.toLocaleString() + '円');
+    updateText('target-coin-val', targetCoin.toLocaleString() + '円');
+
+    // プログレスバー反映
+    const pctBank = targetBank > 0 ? Math.min(100, Math.round((mySavingsBank / targetBank) * 100)) : 0;
+    const pctWallet = targetWallet > 0 ? Math.min(100, Math.round((mySavingsWallet / targetWallet) * 100)) : 0;
+    const pctCoin = targetCoin > 0 ? Math.min(100, Math.round((mySavingsCoin / targetCoin) * 100)) : 0;
+
+    updateText('pct-bank', pctBank + '%');
+    updateText('pct-wallet', pctWallet + '%');
+    updateText('pct-coin', pctCoin + '%');
+
+    const barBank = document.getElementById('bar-bank');
+    const barWallet = document.getElementById('bar-wallet');
+    const barCoin = document.getElementById('bar-coin');
+
+    if (barBank) barBank.style.width = pctBank + '%';
+    if (barWallet) barWallet.style.width = pctWallet + '%';
+    if (barCoin) barCoin.style.width = pctCoin + '%';
+
+    // 6. 履歴リスト＆分析の表示
+    renderHistory();
+    renderAnalysis();
+}
+
+// --- 履歴レンダリング ---
+function renderHistory() {
+    const listContainer = document.getElementById('history-list');
+    if (!listContainer) return;
+    
+    listContainer.innerHTML = '';
+
+    const now = new Date();
+    const thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    
+    let lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+
+    const sortedData = [...kakeiboData].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    sortedData.forEach(item => {
+        const itemMonth = item.date.substring(0, 7); 
         
-        let lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+        if (currentFilter === 'this-month' && itemMonth !== thisMonthStr) return;
+        if (currentFilter === 'last-month' && itemMonth !== lastMonthStr) return;
 
-        // 日付の降順（新しい順）に並べ替え
-        const sortedData = [...kakeiboData].sort((a, b) => new Date(b.date) - new Date(a.date));
+        const memoText = item.memo ? `<span style="font-size:11px; color:#888; font-weight:normal; margin-left:6px;">(${item.memo})</span>` : '';
 
-        sortedData.forEach(item => {
-            const itemMonth = item.date.substring(0, 7); // "YYYY-MM"
-            
-            // フィルター条件判定
-            if (currentFilter === 'this-month' && itemMonth !== thisMonthStr) return;
-            if (currentFilter === 'last-month' && itemMonth !== lastMonthStr) return;
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `
+            <div class="history-details">
+                <span style="font-weight:700; font-size:14px;">[${item.category}]${memoText}</span>
+                <span class="history-payment">${item.date} / 支払: ${paymentLabels[item.payment] || item.payment}</span>
+            </div>
+            <div class="history-right">
+                <span class="history-amount">${Number(item.amount).toLocaleString()}円</span>
+                <button class="delete-btn" onclick="deleteHistoryItem('${item.id}')">×</button>
+            </div>
+        `;
+        listContainer.appendChild(div);
+    });
 
-            const div = document.createElement('div');
-            div.className = 'history-item';
-            div.innerHTML = `
-                <div class="history-details">
-                    <span style="font-weight:700; font-size:14px;">[${item.category}]</span>
-                    <span class="history-payment">${item.date} / 支払: ${paymentLabels[item.payment] || item.payment}</span>
+    if (listContainer.innerHTML === '') {
+        listContainer.innerHTML = '<p style="text-align:center; font-size:12px; color:var(--text-muted); margin-top:15px;">該当する履歴はありません</p>';
+    }
+}
+
+function setFilter(filterType) {
+    currentFilter = filterType;
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    
+    const targetFilterBtn = document.getElementById(`filter-${filterType}`);
+    if (targetFilterBtn) targetFilterBtn.classList.add('active');
+    
+    renderHistory();
+}
+
+// --- カテゴリ支出分析レンダリング ---
+function renderAnalysis() {
+    const container = document.getElementById('category-analysis-container');
+    if (!container) return;
+    
+    container.innerHTML = '';
+
+    const now = new Date();
+    const thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    let totalSpent = 0;
+    const categoryTotals = {};
+    myCategories.forEach(cat => categoryTotals[cat] = 0);
+
+    kakeiboData.forEach(item => {
+        const itemMonth = item.date.substring(0, 7);
+        if (itemMonth === thisMonthStr) {
+            const amt = Number(item.amount);
+            totalSpent += amt;
+            if (categoryTotals[item.category] !== undefined) {
+                categoryTotals[item.category] += amt;
+            } else {
+                categoryTotals[item.category] = amt;
+            }
+        }
+    });
+
+    if (totalSpent === 0) {
+        container.innerHTML = '<p style="text-align:center; font-size:12px; color:var(--text-muted); margin:0;">今月の支出データはまだありません</p>';
+        return;
+    }
+
+    Object.entries(categoryTotals)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([cat, amount]) => {
+            if (amount === 0) return;
+            const pct = Math.round((amount / totalSpent) * 100);
+            const row = document.createElement('div');
+            row.className = 'category-row';
+            row.innerHTML = `
+                <div class="category-header">
+                    <span>${cat} (${pct}%)</span>
+                    <span>${amount.toLocaleString()}円</span>
                 </div>
-                <div class="history-right">
-                    <span class="history-amount">${Number(item.amount).toLocaleString()}円</span>
-                    <button class="delete-btn" onclick="deleteHistoryItem('${item.id}')">×</button>
+                <div class="category-bar-bg">
+                    <div class="category-bar-fill" style="width: ${pct}%;"></div>
                 </div>
             `;
-            listContainer.appendChild(li = div);
+            container.appendChild(row);
         });
+}
 
-        if (listContainer.innerHTML === '') {
-            listContainer.innerHTML = '<p style="text-align:center; font-size:12px; color:var(--text-muted); margin-top:15px;">該当する履歴はありません</p>';
-        }
-    }
+// --- 各種イベント処理 ---
 
-    function setFilter(filterType) {
-        currentFilter = filterType;
-        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`filter-${filterType}`).classList.add('active');
-        renderHistory();
-    }
+// 給料をそのまま銀行残高（貯蓄）に加算する処理
+const salaryForm = document.getElementById('salary-form');
+if (salaryForm) {
+    salaryForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const amountInput = document.getElementById('salary-amount');
+        if (!amountInput) return;
 
-    // --- カテゴリ支出分析レンダリング ---
-    function renderAnalysis() {
-        const container = document.getElementById('category-analysis-container');
-        container.innerHTML = '';
+        const salaryAmt = Number(amountInput.value);
+        if (salaryAmt <= 0) return;
 
-        const now = new Date();
-        const thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        mySavingsBank += salaryAmt; 
 
-        // 今月の全支出を計算
-        let totalSpent = 0;
-        const categoryTotals = {};
-        myCategories.forEach(cat => categoryTotals[cat] = 0);
+        amountInput.value = '';
+        alert(`給料（${salaryAmt.toLocaleString()}円）を銀行残高に追加しました！`);
+        updateUI(); 
+    });
+}
 
-        kakeiboData.forEach(item => {
-            const itemMonth = item.date.substring(0, 7);
-            if (itemMonth === thisMonthStr) {
-                const amt = Number(item.amount);
-                totalSpent += amt;
-                if (categoryTotals[item.category] !== undefined) {
-                    categoryTotals[item.category] += amt;
-                } else {
-                    categoryTotals[item.category] = amt;
-                }
-            }
-        });
-
-        if (totalSpent === 0) {
-            container.innerHTML = '<p style="text-align:center; font-size:12px; color:var(--text-muted); margin:0;">今月の支出データはまだありません</p>';
-            return;
-        }
-
-        // カテゴリ別支出を並べ替え
-        Object.entries(categoryTotals)
-            .sort((a, b) => b[1] - a[1])
-            .forEach(([cat, amount]) => {
-                if (amount === 0) return;
-                const pct = Math.round((amount / totalSpent) * 100);
-                const row = document.createElement('div');
-                row.className = 'category-row';
-                row.innerHTML = `
-                    <div class="category-header">
-                        <span>${cat} (${pct}%)</span>
-                        <span>${amount.toLocaleString()}円</span>
-                    </div>
-                    <div class="category-bar-bg">
-                        <div class="category-bar-fill" style="width: ${pct}%;"></div>
-                    </div>
-                `;
-                container.appendChild(row);
-            });
-    }
-
-    // --- 各種イベント処理 ---
-
-    // 家計簿の登録
-    document.getElementById('kakeibo-form').addEventListener('submit', function(e) {
+// 家計簿の登録
+const kakeiboForm = document.getElementById('kakeibo-form');
+if (kakeiboForm) {
+    kakeiboForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const dateVal = document.getElementById('date').value;
         const categoryVal = document.getElementById('category').value;
         const paymentVal = document.getElementById('payment-method').value;
         const amountVal = Number(document.getElementById('amount').value);
+        const memoVal = document.getElementById('memo').value.trim();
 
         if (!categoryVal) {
             alert('カテゴリを設定してください。先にカテゴリの追加が必要です。');
             return;
         }
 
-        // 資金源からマイナスする処理
         if (paymentVal === 'bank') {
             mySavingsBank -= amountVal;
         } else if (paymentVal === 'cash') {
@@ -1172,35 +1245,39 @@ document.getElementById('salary-form').addEventListener('submit', function(e) {
             date: dateVal,
             category: categoryVal,
             payment: paymentVal,
-            amount: amountVal
+            amount: amountVal,
+            memo: memoVal || '' 
         };
 
         kakeiboData.push(newItem);
         document.getElementById('amount').value = '';
+        document.getElementById('memo').value = ''; 
         updateUI();
     });
+}
 
-    // 履歴アイテムの削除
-    function deleteHistoryItem(id) {
-        const itemIdx = kakeiboData.findIndex(item => item.id === id);
-        if (itemIdx > -1) {
-            const item = kakeiboData[itemIdx];
-            const amt = Number(item.amount);
+// 履歴アイテムの削除
+function deleteHistoryItem(id) {
+    const itemIdx = kakeiboData.findIndex(item => item.id === id);
+    if (itemIdx > -1) {
+        const item = kakeiboData[itemIdx];
+        const amt = Number(item.amount);
 
-            // 削除時に資金源を戻す（返金処理）
-            if (item.payment === 'bank') {
-                mySavingsBank += amt;
-            } else if (item.payment === 'cash') {
-                mySavingsWallet += amt;
-            }
-
-            kakeiboData.splice(itemIdx, 1);
-            updateUI();
+        if (item.payment === 'bank') {
+            mySavingsBank += amt;
+        } else if (item.payment === 'cash') {
+            mySavingsWallet += amt;
         }
-    }
 
-    // 500円玉貯金への移行処理
-    document.getElementById('add-500-btn').addEventListener('click', function() {
+        kakeiboData.splice(itemIdx, 1);
+        updateUI();
+    }
+}
+
+// 500円玉貯金への移行処理
+const add500Btn = document.getElementById('add-500-btn');
+if (add500Btn) {
+    add500Btn.addEventListener('click', function() {
         if (mySavingsWallet >= 500) {
             mySavingsWallet -= 500;
             mySavingsCoin += 500;
@@ -1209,11 +1286,16 @@ document.getElementById('salary-form').addEventListener('submit', function(e) {
             alert('お財布の現金残高が500円未満のため、移行できません。');
         }
     });
+}
 
-    // カテゴリ追加
-    document.getElementById('add-category-form').addEventListener('submit', function(e) {
+// カテゴリ追加
+const addCategoryForm = document.getElementById('add-category-form');
+if (addCategoryForm) {
+    addCategoryForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const input = document.getElementById('new-category-input');
+        if (!input) return;
+
         const newCat = input.value.trim();
         if (newCat && !myCategories.includes(newCat)) {
             myCategories.push(newCat);
@@ -1223,19 +1305,21 @@ document.getElementById('salary-form').addEventListener('submit', function(e) {
             alert('既に存在しているか、無効なカテゴリ名です。');
         }
     });
+}
 
-    // カテゴリ削除
-    function deleteCategory(index) {
-        const deletedCat = myCategories[index];
-        if (confirm(`カテゴリ「${deletedCat}」を削除しますか？`)) {
-            myCategories.splice(index, 1);
-            updateUI();
-        }
+// カテゴリ削除
+function deleteCategory(index) {
+    const deletedCat = myCategories[index];
+    if (confirm(`カテゴリ「${deletedCat}」を削除しますか？`)) {
+        myCategories.splice(index, 1);
+        updateUI();
     }
- 
-    
-    // 手元の初期残高設定
-    document.getElementById('savings-form').addEventListener('submit', function(e) {
+}
+
+// 貯金目標および手元の残高設定
+const savingsForm = document.getElementById('savings-form');
+if (savingsForm) {
+    savingsForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const type = document.getElementById('savings-type').value;
         const amt = Number(document.getElementById('savings-input').value);
@@ -1244,13 +1328,29 @@ document.getElementById('salary-form').addEventListener('submit', function(e) {
         if (type === 'wallet') mySavingsWallet = amt;
         if (type === 'coin') mySavingsCoin = amt;
 
+        // 目標額設定（もし目標金額の設定フォーム要素が存在すればそこからも取得）
+        const targetBankInput = document.getElementById('target-bank-input');
+        const targetWalletInput = document.getElementById('target-wallet-input');
+        const targetCoinInput = document.getElementById('target-coin-input');
+
+        if (targetBankInput && targetBankInput.value) targetBank = Number(targetBankInput.value);
+        if (targetWalletInput && targetWalletInput.value) targetWallet = Number(targetWalletInput.value);
+        if (targetCoinInput && targetCoinInput.value) targetCoin = Number(targetCoinInput.value);
+
         document.getElementById('savings-input').value = '';
-        alert('残高を手動更新しました。');
+        if (targetBankInput) targetBankInput.value = '';
+        if (targetWalletInput) targetWalletInput.value = '';
+        if (targetCoinInput) targetCoinInput.value = '';
+
+        alert('貯金データを手動更新しました。');
         updateUI();
     });
+}
 
-    // クレカ設定更新
-    document.getElementById('credit-settings-form').addEventListener('submit', function(e) {
+// クレカ設定更新
+const creditSettingsForm = document.getElementById('credit-settings-form');
+if (creditSettingsForm) {
+    creditSettingsForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const target = document.getElementById('settings-target').value;
         const limit = document.getElementById('settings-limit').value;
@@ -1270,7 +1370,6 @@ document.getElementById('salary-form').addEventListener('submit', function(e) {
             if (payday) paypayPayday = Number(payday);
         }
 
-        // フォームクリア
         document.getElementById('settings-limit').value = '';
         document.getElementById('settings-revo').value = '';
         document.getElementById('settings-closingday').value = '';
@@ -1279,71 +1378,75 @@ document.getElementById('salary-form').addEventListener('submit', function(e) {
         alert('クレジットカードの設定を更新しました。');
         updateUI();
     });
+}
 
-    // 手動引き落としアクション
-    function payOffCard(cardType) {
-        let closingDay, payday, cardLabel;
-        if (cardType === 'jcb') {
-            closingDay = jcbClosingDay;
-            payday = jcbPayday;
-            cardLabel = 'JCB';
-        } else {
-            closingDay = paypayClosingDay;
-            payday = paypayPayday;
-            cardLabel = 'PayPay';
-        }
-
-        const today = new Date();
-        const nextPayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-        
-        // 対象の引き落としデータを集計
-        let targetAmount = 0;
-        kakeiboData.forEach(item => {
-            if (item.payment === cardType) {
-                const billDate = getBillingMonth(item.date, closingDay, payday);
-                if (billDate.getFullYear() === nextPayMonth.getFullYear() && billDate.getMonth() === nextPayMonth.getMonth()) {
-                    targetAmount += Number(item.amount);
-                }
-            }
-        });
-
-        if (targetAmount === 0) {
-            alert(`次回の${cardLabel}カード引き落とし予定額は 0円 です。`);
-            return;
-        }
-
-        if (mySavingsBank < targetAmount) {
-            alert(`銀行口座残高（${mySavingsBank.toLocaleString()}円）が、引き落とし予定額（${targetAmount.toLocaleString()}円）に満たないため、引き落としを完了できません。口座にお金を入れてください。`);
-            return;
-        }
-
-        if (confirm(`銀行口座から ${targetAmount.toLocaleString()}円 を引き落とし（${cardLabel}の次回支払い分を清算）しますか？`)) {
-            // 銀行口座から残高をマイナス
-            mySavingsBank -= targetAmount;
-
-            // 履歴データから該当する支払い対象のデータを削除する（または精算フラグを立てるが、今回はシンプル化のためにデータを履歴から削除、もしくはそのまま表示を維持しつつ引き落とし対象から除外）
-            // 実装としては、次回引き落とし計算が狂わないように精算済みとして支払い方法を「精算済みのキャッシュ」に変換する、もしくは該当クレカのデータから除外する
-            kakeiboData = kakeiboData.filter(item => {
-                if (item.payment === cardType) {
-                    const billDate = getBillingMonth(item.date, closingDay, payday);
-                    const isTarget = (billDate.getFullYear() === nextPayMonth.getFullYear() && billDate.getMonth() === nextPayMonth.getMonth());
-                    return !isTarget; // 対象外（まだ未来の請求分）だけ残す
-                }
-                return true;
-            });
-
-            alert(`銀行口座から ${cardLabel} の代金（${targetAmount.toLocaleString()}円）を引き落としました！`);
-            updateUI();
-        }
+// 手動引き落としアクション
+function payOffCard(cardType) {
+    let closingDay, payday, cardLabel;
+    if (cardType === 'jcb') {
+        closingDay = jcbClosingDay;
+        payday = jcbPayday;
+        cardLabel = 'JCB';
+    } else {
+        closingDay = paypayClosingDay;
+        payday = paypayPayday;
+        cardLabel = 'PayPay';
     }
 
-    document.getElementById('pay-off-jcb-btn').addEventListener('click', () => payOffCard('jcb'));
-    document.getElementById('pay-off-paypay-btn').addEventListener('click', () => payOffCard('paypay'));
+    const today = new Date();
+    const nextPayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    
+    let targetAmount = 0;
+    kakeiboData.forEach(item => {
+        if (item.payment === cardType) {
+            const billDate = getBillingMonth(item.date, closingDay, payday);
+            if (billDate.getFullYear() === nextPayMonth.getFullYear() && billDate.getMonth() === nextPayMonth.getMonth()) {
+                targetAmount += Number(item.amount);
+            }
+        }
+    });
 
-    // --- アプリの起動 ---
+    if (targetAmount === 0) {
+        alert(`次回の${cardLabel}カード引き落とし予定額は 0円 です。`);
+        return;
+    }
+
+    if (mySavingsBank < targetAmount) {
+        alert(`銀行口座残高（${mySavingsBank.toLocaleString()}円）が、引き落とし予定額（${targetAmount.toLocaleString()}円）に満たないため、引き落としを完了できません。口座にお金を入れてください。`);
+        return;
+    }
+
+    if (confirm(`銀行口座から ${targetAmount.toLocaleString()}円 を引き落とし（${cardLabel}の次回支払い分を清算）しますか？`)) {
+        mySavingsBank -= targetAmount;
+
+        kakeiboData = kakeiboData.filter(item => {
+            if (item.payment === cardType) {
+                const billDate = getBillingMonth(item.date, closingDay, payday);
+                const isTarget = (billDate.getFullYear() === nextPayMonth.getFullYear() && billDate.getMonth() === nextPayMonth.getMonth());
+                return !isTarget; 
+            }
+            return true;
+        });
+
+        alert(`銀行口座から ${cardLabel} の代金（${targetAmount.toLocaleString()}円）を引き落としました！`);
+        updateUI();
+    }
+}
+
+const payOffJcbBtn = document.getElementById('pay-off-jcb-btn');
+if (payOffJcbBtn) payOffJcbBtn.addEventListener('click', () => payOffCard('jcb'));
+
+const payOffPaypayBtn = document.getElementById('pay-off-paypay-btn');
+if (payOffPaypayBtn) payOffPaypayBtn.addEventListener('click', () => payOffCard('paypay'));
+
+// --- アプリの起動 ---
+document.addEventListener('DOMContentLoaded', () => {
     resetToToday();
-    toggleAllocationInputLabel();
-    updateUI();
+    if (typeof toggleAllocationInputLabel === 'function') {
+        toggleAllocationInputLabel();
+    }
+    updateUI(); 
+});
 </script>
 </body>
 </html>
