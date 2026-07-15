@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家計簿</title>
+    <style>
+        /* --- 温かみ＆カフェ風・北欧ナチュラル --- */
+        :root {
+            --bg-primary: #faf6f0;       /* 全体の背景：ほっこりあたたかいアイボリー */
+            --bg-card: #ffffff;          /* カードの背景：やわらかな白 */
+            --border-color: #e6dfd5;     /* 境界線：やさしいベージュグレー */
+            --text-main: #4a3e3d;        /* メイン文字：温かみのあるダークブラウン */
+            --text-muted: #8c7e7a;       /* 補足文字：落ち着いたモカグレー */
+            
+            /* 北欧アースカラーのアクセント */
+            --accent-blue: #7a9eb5;      /* くすみブルー（銀行） */
+            --accent-green: #8ca184;     /* オリーブグリーン（500円・コイン） */
+            --accent-red: #c97a70;       /* テラコッタレッド（マイナス・警告） */
+            --accent-orange: #d9a05b;    /* マスタードイエロー（お財布・引き落とし） */
+            --accent-purple: #9d8ea8;    /* 優しげなラベンダー（カテゴリ分析） */
+            --font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 80px; /* 下部ナビ用の余白 */
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            padding: 24px 20px;
+            min-height: 100vh;
+            box-sizing: border-box;
+            border-left: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+        }
+
+        h1 { 
+            text-align: center; 
+            color: var(--text-main); 
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 10px; 
+            margin-bottom: 24px;
+        }
+
+        h3 { 
+            color: var(--text-main); 
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-top: 28px; 
+            border-bottom: 2px dashed var(--border-color); /* 北欧テイストの可愛い点線ボーダー */
+            padding-bottom: 8px; 
+            margin-bottom: 14px; 
+        }
+        
+        /* タブ切り替え */
+        .page { display: none; }
+        .page.active { 
+            display: block; 
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* フォーム共通 */
+        .form-group { margin-bottom: 16px; }
+        label { 
+            display: block; 
+            margin-bottom: 6px; 
+            font-weight: 700; 
+            color: var(--text-muted); 
+            font-size: 13px; 
+        }
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            box-sizing: border-box;
+            border: 2px solid var(--border-color); /* 少し太めで丸みのあるボーダー */
+            border-radius: 10px;                  /* 丸みを少し強くして優しさを演出 */
+            font-size: 15px;
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            transition: all 0.2s ease;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            background-color: var(--bg-card);
+        }
+
+        /* ボタン */
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #6e8564; /* ほっこり落ち着く深めのフォレストグリーン */
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(110, 133, 100, 0.15);
+        }
+        button:hover { 
+            background-color: #5c7053; 
+            transform: translateY(1px);
+            box-shadow: none;
+        }
+
+        /* 日付コントロール専用のスタイル */
+        .date-control-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .date-adjust-btn {
+            width: auto;
+            padding: 10px 14px;
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            border: 2px solid var(--border-color);
+            font-size: 13px;
+            white-space: nowrap;
+            box-shadow: none;
+        }
+        .date-adjust-btn:hover {
+            background-color: var(--border-color);
+        }
+
+        /* 履歴フィルター */
+        .filter-container {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        .filter-btn {
+            flex: 1;
+            padding: 8px;
+            background-color: var(--bg-primary);
+            color: var(--text-muted);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s ease;
+        }
+        .filter-btn:hover {
+            background-color: var(--border-color);
+        }
+        .filter-btn.active {
+            background-color: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+
+        /* 履歴リスト */
+        .history { margin-top: 24px; }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px dashed var(--border-color); /* 切り取り線のような点線 */
+        }
+        .history-details {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        .history-payment {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        .history-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .history-amount {
+            font-weight: 700;
+            color: var(--text-main);
+            font-size: 15px;
+        }
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--accent-red);
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px 8px;
+            width: auto;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .delete-btn:hover { 
+            opacity: 1;
+        }
+
+        /* カード形式 */
+        .card {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-left: 5px solid var(--accent-blue);
+            padding: 16px;
+            border-radius: 12px; /* 少し大きめの丸みで親しみやすく */
+            margin-bottom: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        /* 各種カードの左ボーダーにのみ北欧ナチュラルカラー */
+        .card.card-jcb { border-left-color: #5b8296; background-color: rgba(91, 130, 150, 0.04); }
+        .card.card-paypay { border-left-color: #c97a70; background-color: rgba(201, 122, 112, 0.04); }
+        
+        .card.card-bank { border-left-color: var(--accent-blue); background-color: rgba(122, 158, 181, 0.04); }
+        .card.card-wallet { border-left-color: var(--accent-orange); background-color: rgba(217, 160, 91, 0.04); }
+        .card.card-coin { border-left-color: var(--accent-green); background-color: rgba(140, 161, 132, 0.04); }
+
+        .card-title { 
+            font-size: 12px; 
+            color: var(--text-muted); 
+            margin: 0 0 6px 0; 
+            font-weight: 700; 
+        }
+        .card-value { 
+            font-size: 21px; 
+            font-weight: 700; 
+            color: var(--text-main); 
+            margin: 0 0 8px 0; 
+        }
+        .card-subinfo { 
+            font-size: 12px; 
+            color: var(--text-muted); 
+            margin: 4px 0; 
+            display: flex; 
+            justify-content: space-between; 
+        }
+        .card-subinfo.highlight { color: var(--accent-blue); font-weight: 700; }
+        .card-subinfo.highlight-red { color: var(--accent-red); font-weight: 700; }
+
+        /* アラートカード */
+        .alert-card {
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-bottom: 14px;
+            font-weight: 700;
+            line-height: 1.5;
+        }
+        .alert-success { 
+            background-color: #eaf0e8; 
+            color: #4a6344; 
+            border: 2px solid #d3decb; 
+        }
+        .alert-danger { 
+            background-color: #f7edea; 
+            color: #8c4c42; 
+            border: 2px solid #ebdad5; 
+        }
+
+        /* プログレスバー */
+        .progress-container {
+            background-color: var(--border-color);
+            border-radius: 8px;
+            height: 8px;
+            width: 100%;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            border-radius: 8px;
+            transition: width 0.4s ease;
+        }
+        .progress-bank { background-color: var(--accent-blue); }
+        .progress-wallet { background-color: var(--accent-orange); }
+        .progress-coin { background-color: var(--accent-green); }
+
+       
+        /* ナビゲーションバー */
+        .nav-bar {
+            position: fixed;
+            bottom: 0; /* いったんシンプルに0にします */
+            left: 0;
+            right: 0;
+            height: 60px;
+            
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 2px solid var(--border-color);
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+            z-index: 1000;
+            
+            /* 👇 これを追加：ナビゲーションバー自体がブラウザのジェスチャー（ツールバー表示など）を邪魔しないようにします */
+            pointer-events: auto; 
+        }
+        .nav-item {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 33%;
+            padding: 6px 0;
+            transition: color 0.2s ease;
+        }
+        .nav-item .icon { 
+            font-size: 18px; 
+            margin-bottom: 2px; 
+        }
+        .nav-item.active { 
+            color: var(--accent-blue); 
+        }
+
+        .action-btn {
+            padding: 10px 12px;
+            font-size: 13px;
+            margin-top: 8px;
+            margin-bottom: 14px;
+            width: 100%;
+        }
+
+        
+        /* 500円チャリンボタン専用 */
+        .coin-btn {
+            background-color: var(--accent-green);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            width: auto;
+            margin-top: 4px;
+            box-shadow: 0 2px 4px rgba(140, 161, 132, 0.2);
+            transition: all 0.2s;
+        }
+        .coin-btn:hover { 
+            background-color: #798e72; 
+            transform: translateY(1px);
+            box-shadow: none;
+        }
+
+        /* カテゴリ支出分析スタイル */
+        .category-row {
+            margin-bottom: 12px;
+        }
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+        .category-bar-bg {
+            background-color: var(--border-color);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .category-bar-fill {
+            height: 100%;
+            background-color: var(--accent-purple);
+            width: 0%;
+            border-radius: 4px;
+            transition: width 0.4s ease;
+        }
+
+        /* カテゴリ管理設定リスト */
+        .category-manage-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 16px 0;
+        }
+        .category-manage-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            border: 2px solid var(--border-color);
+            border-left: 4px solid var(--accent-blue);
+        }
+        .category-manage-item span {
+            font-size: 13px;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        /* 詳細スケジュール用スタイル */
+        .schedule-box {
+            background: var(--bg-card);
+            border: 2px dashed var(--border-color); /* やさしい点線の囲み枠 */
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .schedule-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px dotted var(--border-color);
+        }
+        .schedule-row:last-child {
+            border-bottom: none;
+        }
+</style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- 1ページ目：家計簿（入力・履歴・分析） -->
+    <div id="page-kakeibo" class="page active">
+        <h1>家計簿</h1>
+        <form id="kakeibo-form">
+            <div class="form-group">
+                <label for="date">日付（自動で当日がセットされます）</label>
+                <div class="date-control-container">
+                    <button type="button" class="date-adjust-btn" onclick="adjustDate(-1)">◀ 昨日</button>
+                    <input type="date" id="date" required>
+                    <button type="button" class="date-adjust-btn" onclick="adjustDate(1)">明日 ▶</button>
+                </div>
+                <div style="text-align: right; margin-top: 5px;">
+                    <button type="button" class="date-adjust-btn" style="background-color: #7a9eb5; color: white; padding: 4px 8px; font-size: 12px;" onclick="resetToToday()">今日に戻す</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="category">カテゴリ</label>
+                <select id="category" required>
+                    <!-- JavaScriptで動的に読み込まれます -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="payment-method">支払い方法</label>
+                <select id="payment-method" required>
+                    <option value="jcb">JCBカード</option>
+                    <option value="paypay">PayPayカード</option>
+                    <option value="bank">口座から直接送金</option>
+                    <option value="cash">現金（財布から）</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="amount">金額 (円)</label>
+                <input type="number" id="amount" placeholder="金額を入力" required inputmode="numeric">
+            </div>
+            <button type="submit">記録する</button>
+        </form>
+
+        <!-- 📊 今月のカテゴリ別分析セクション -->
+        <h3>📊 今月のカテゴリ別支出</h3>
+        <div id="category-analysis-container" style="background: white; border: 1px solid #eee; padding: 15px; border-radius: 5px;">
+            <!-- JavaScriptで動的に生成されます -->
+        </div>
+
+        <!-- 🛠 カテゴリの自由追加・編集セクション -->
+        <h3>⚙ カテゴリの編集</h3>
+        <div style="background: white; border: 1px solid #eee; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <ul id="category-manage-list" class="category-manage-list">
+                <!-- JavaScriptで動的に生成されます -->
+            </ul>
+            <form id="add-category-form" style="display: flex; gap: 8px;">
+                <input type="text" id="new-category-input" placeholder="新しいカテゴリ名を入力" required style="flex-grow: 1; font-size: 14px; padding: 8px;">
+                <button type="submit" style="width: auto; background-color: #7a9eb5; font-size: 14px; padding: 8px 15px;">追加</button>
+            </form>
+        </div>
+
+        <div class="history">
+            <h2>履歴</h2>
+            <!-- 📅 履歴フィルター用ボタン -->
+            <div class="filter-container">
+                <button id="filter-this-month" class="filter-btn active" onclick="setFilter('this-month')">今月</button>
+                <button id="filter-last-month" class="filter-btn" onclick="setFilter('last-month')">先月</button>
+                <button id="filter-all" class="filter-btn" onclick="setFilter('all')">全期間</button>
+            </div>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <!-- 2ページ目：貯金額管理 -->
+    <div id="page-savings" class="page">
+        <h1>貯金額</h1>
+        
+        <!-- 総合計 -->
+        <div class="card" style="border-left-color: #333; background-color: #fdfdfd;">
+            <p class="card-title">すべての合計（口座＋財布＋500円玉）</p>
+            <p class="card-value" id="savings-total-display" style="font-size: 24px; color: #111;">0円</p>
+        </div>
+
+        <!-- 🔵 口座残高 -->
+        <div class="card card-bank">
+            <p class="card-title">🏦 銀行口座 残高</p>
+            <p class="card-value" id="savings-bank-display">0円</p>
+            <div class="card-subinfo">
+                <span>目標: <span id="target-bank-val">0円</span></span>
+                <span id="pct-bank" style="font-weight:bold; color:#7a9eb5;">0%</span>
+            </div>
+            <div class="progress-container"><div id="bar-bank" class="progress-bar progress-bank"></div></div>
+            <span style="font-size: 11px; color: #666; display:block; margin-top:5px;">※直接送金やクレカ自動引き落としでここから減ります</span>
+        </div>
+
+        <!-- 🟡 お財布の現金 -->
+        <div class="card card-wallet">
+            <p class="card-title">👛 お財布の現金 残高</p>
+            <p class="card-value" id="savings-wallet-display">0円</p>
+            <div class="card-subinfo">
+                <span>目標: <span id="target-wallet-val">0円</span></span>
+                <span id="pct-wallet" style="font-weight:bold; color:#d9a05b;">0%</span>
+            </div>
+            <div class="progress-container"><div id="bar-wallet" class="progress-bar progress-wallet"></div></div>
+            <span style="font-size: 11px; color: #666; display:block; margin-top:5px;">※「現金」で支払ったときにここから減ります</span>
+        </div>
+
+        <!-- 🟢 500円玉貯金 -->
+        <div class="card card-coin">
+            <p class="card-title">🪙 500円玉貯金 総額</p>
+            <p class="card-value" id="savings-coin-display">0円</p>
+            <div class="card-subinfo">
+                <span>目標: <span id="target-coin-val">0円</span></span>
+                <span id="pct-coin" style="font-weight:bold; color:#8ca184;">0%</span>
+            </div>
+            <div class="progress-container"><div id="bar-coin" class="progress-bar progress-coin"></div></div>
+            <div class="card-subinfo" style="margin-top: 8px;">
+                <span>枚数に換算すると: <span id="savings-coin-count" style="font-weight: bold; color: #8ca184;">0枚</span></span>
+            </div>
+            <!-- チャリンボタン -->
+            <button id="add-500-btn" class="coin-btn">🪙 お財布から500円玉貯金へ移す (+500円)</button>
+        </div>
+
+        <!-- 💰 給料（収入）の登録と自動配分 -->
+        <h3>💰 給料・収入を登録する</h3>
+        <form id="salary-form" style="background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="salary-amount">今月の給料・収入金額 (円)</label>
+                <input type="number" id="salary-amount" placeholder="例: 200000" required inputmode="numeric">
+            </div>
+            <button type="submit" style="background-color: #8ca184;">給料を入力して貯金に反映</button>
+        </form>
+
+       
+        <!-- 🎯 目標貯金額の設定 -->
+        <h3>🎯 各項目の貯金目標を設定する</h3>
+        <form id="target-settings-form" style="background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="target-type">目標を設定する項目</label>
+                <select id="target-type" required>
+                    <option value="bank">🏦 銀行口座の目標額</option>
+                    <option value="wallet">👛 お財布現金の目標額</option>
+                    <option value="coin">🪙 500円玉貯金の目標額</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="target-amount">目標金額 (円)</label>
+                <input type="number" id="target-amount" placeholder="例: 100000" required inputmode="numeric">
+            </div>
+            <button type="submit" style="background-color: #9d8ea8;">目標金額を設定する</button>
+        </form>
+
+        <!-- ⚙ 各残高の手動更新 -->
+        <h3>⚙ 貯金額・手元資金の初期設定</h3>
+        <form id="savings-form">
+            <div class="form-group">
+                <label for="savings-type">設定・変更する項目</label>
+                <select id="savings-type" required>
+                    <option value="bank">🏦 銀行口座の残高</option>
+                    <option value="wallet">👛 お財布の現金残高</option>
+                    <option value="coin">🪙 500円玉貯金の総額</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="savings-input">新しい金額を入力 (円)</label>
+                <input type="number" id="savings-input" placeholder="例: 150000" required inputmode="numeric">
+            </div>
+            <button type="submit" style="background-color: #7a9eb5;">貯金設定を更新する</button>
+        </form>
+    </div>
+
+    <!-- 3ページ目：クレジットカード管理 -->
+    <div id="page-credit" class="page">
+        <h1>💳 カード・引き落とし</h1>
+
+        <!-- 🚨 引き落としショート警告アラートエリア -->
+        <div id="credit-alert-area"></div>
+        
+        <!-- 🔵 JCBカードセクション -->
+        <h3>🇯🇵 JCBカード</h3>
+        <div class="card card-jcb">
+            <p class="card-title">JCBカードの利用状況</p>
+            <div class="card-subinfo">
+                <span>設定締め日:</span>
+                <span id="jcb-closing-day-display" style="font-weight: bold;">毎月 15 日</span>
+            </div>
+            <div class="card-subinfo">
+                <span>設定引き落とし日:</span>
+                <span id="jcb-payday-display" style="font-weight: bold; color: #5b8296;">毎月 10 日 (翌月)</span>
+            </div>
+            <div class="card-subinfo">
+                <span>分割・リボ等の未払残高:</span>
+                <span id="jcb-revo-display">0円</span>
+            </div>
+            <div class="card-subinfo highlight-red">
+                <span>JCBトータル未払残高:</span>
+                <span id="jcb-total-display">0円</span>
+            </div>
+            <div class="card-subinfo">
+                <span>JCBショッピング限度額:</span>
+                <span id="jcb-limit-display">0円</span>
+            </div>
+            <div class="card-subinfo highlight">
+                <span>💳 あと使える金額（可能額）:</span>
+                <span id="jcb-available-display">0円</span>
+            </div>
+
+            <!-- 📅 引き落とし予定額の未来スケジュール可視化 -->
+            <div class="schedule-box">
+                <div style="font-weight: bold; margin-bottom: 5px; color:#5b8296;">📅 JCB引き落としスケジュール</div>
+                <div class="schedule-row">
+                    <span>次回引き落とし予定 (<span id="jcb-schedule-date-1">--/--</span>):</span>
+                    <span id="jcb-schedule-amount-1" style="font-weight: bold;">0円</span>
+                </div>
+                <div class="schedule-row">
+                    <span>次々回引き落とし予定 (<span id="jcb-schedule-date-2">--/--</span>):</span>
+                    <span id="jcb-schedule-amount-2">0円</span>
+                </div>
+            </div>
+        </div>
+        <button id="pay-off-jcb-btn" class="action-btn" style="background-color: #5b8296; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+            💸 口座から直近のJCB代金を手動で引き落とす
+        </button>
+
+        <!-- 🔴 PayPayカードセクション -->
+        <h3>🔴 PayPayカード</h3>
+        <div class="card card-paypay">
+            <p class="card-title">PayPayカードの利用状況</p>
+            <div class="card-subinfo">
+                <span>設定締め日:</span>
+                <span id="paypay-closing-day-display" style="font-weight: bold;">毎月 末日</span>
+            </div>
+            <div class="card-subinfo">
+                <span>設定引き落とし日:</span>
+                <span id="paypay-payday-display" style="font-weight: bold; color: #c97a70;">毎月 27 日 (翌月)</span>
+            </div>
+            <div class="card-subinfo">
+                <span>分割・リボ等の未払残高:</span>
+                <span id="paypay-revo-display">0円</span>
+            </div>
+            <div class="card-subinfo highlight-red">
+                <span>PayPayトータル未払残高:</span>
+                <span id="paypay-total-display">0円</span>
+            </div>
+            <div class="card-subinfo">
+                <span>PayPayショッピング限度額:</span>
+                <span id="paypay-limit-display">0円</span>
+            </div>
+            <div class="card-subinfo highlight">
+                <span>💳 あと使える金額（可能額）:</span>
+                <span id="paypay-available-display">0円</span>
+            </div>
+
+            <!-- 📅 引き落とし予定額の未来スケジュール可視化 -->
+            <div class="schedule-box">
+                <div style="font-weight: bold; margin-bottom: 5px; color:#c97a70;">📅 PayPay引き落としスケジュール</div>
+                <div class="schedule-row">
+                    <span>次回引き落とし予定 (<span id="paypay-schedule-date-1">--/--</span>):</span>
+                    <span id="paypay-schedule-amount-1" style="font-weight: bold;">0円</span>
+                </div>
+                <div class="schedule-row">
+                    <span>次々回引き落とし予定 (<span id="paypay-schedule-date-2">--/--</span>):</span>
+                    <span id="paypay-schedule-amount-2">0円</span>
+                </div>
+            </div>
+        </div>
+        <button id="pay-off-paypay-btn" class="action-btn" style="background-color: #c97a70; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+            💸 口座から直近のPayPay代金を手動で引き落とす
+        </button>
+
+        <!-- ⚙ クレカの詳細設定 -->
+        <h3>⚙ クレカの上限額・分割リボ・締め日と引き落とし日</h3>
+        <form id="credit-settings-form" style="background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="settings-target">設定するカード</label>
+                <select id="settings-target" required>
+                    <option value="jcb">JCBカード</option>
+                    <option value="paypay">PayPayカード</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="settings-limit">ショッピング限度額 (枠) (円)</label>
+                <input type="number" id="settings-limit" placeholder="例: 300000" inputmode="numeric">
+            </div>
+            <div class="form-group">
+                <label for="settings-revo">分割・リボ等の未払残高 (円)</label>
+                <input type="number" id="settings-revo" placeholder="例: 50000" inputmode="numeric">
+            </div>
+            <div class="form-group">
+                <label for="settings-closingday">締め日 (毎月何日 / 「99」入力で月末締め)</label>
+                <input type="number" id="settings-closingday" min="1" max="99" placeholder="例: 15（JCB）や 99（末日締め）" inputmode="numeric">
+            </div>
+            <div class="form-group">
+                <label for="settings-payday">自動引き落とし日 (翌月何日)</label>
+                <input type="number" id="settings-payday" min="1" max="31" placeholder="例: 10（JCB）や 27（PayPay）" inputmode="numeric">
+            </div>
+            <button type="submit" style="background-color: #495057;">カードの設定を反映する</button>
+        </form>
+    </div>
+
+</div>
+
+<!-- 下部ナビゲーションメニュー -->
+<nav class="nav-bar">
+    <button class="nav-item active" onclick="switchPage('kakeibo')">
+        <span class="icon">💸</span>
+        <span>家計簿</span>
+    </button>
+    <button class="nav-item" onclick="switchPage('savings')">
+        <span class="icon">🏦</span>
+        <span>貯金</span>
+    </button>
+    <button class="nav-item" onclick="switchPage('credit')">
+        <span class="icon">💳</span>
+        <span>クレカ</span>
+    </button>
+</nav>
+
+<!-- 🔄 画面左上に固定される小さな更新ボタン（パープル背景版） -->
+<button onclick="window.location.reload();" 
+        style="position: fixed; top: 16px; left: 16px; z-index: 9999; 
+               width: 32px; height: 32px; border-radius: 50%; 
+               /* 👇 背景を「くすみパープル」、矢印を「白」に */
+               background-color: #9d8ea8; 
+               border: none; 
+               box-shadow: 0 2px 8px rgba(157, 142, 168, 0.4); 
+               display: flex; align-items: center; justify-content: center; 
+               font-size: 16px; cursor: pointer; outline: none; padding: 0;
+               color: #ffffff; 
+               font-weight: bold;
+               transition: transform 0.1s ease, background-color 0.2s ease;"
+        onmousedown="this.style.transform='scale(0.93)';"
+        onmouseup="this.style.transform='scale(1)';"
+        onmouseleave="this.style.transform='scale(1)';"
+        title="再読み込み">
+    ⟳
+</button>
+
+<script>
+    // --- ページ切り替え機能 ---
+    function switchPage(pageId) {
+        document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+
+        document.getElementById(`page-${pageId}`).classList.add('active');
+        
+        const labels = { 'kakeibo': '家計簿', 'savings': '貯金', 'credit': 'クレカ' };
+        const eventTarget = [...document.querySelectorAll('.nav-item')].find(item => item.textContent.includes(labels[pageId]));
+        if (eventTarget) eventTarget.classList.add('active');
+    }
+
+    // --- 📅 日付の自動設定 ＆ 調整機能 ---
+    function formatDate(dateObj) {
+        const yyyy = dateObj.getFullYear();
+        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const dd = String(dateObj.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function resetToToday() {
+        const today = new Date();
+        document.getElementById('date').value = formatDate(today);
+    }
+
+    function adjustDate(daysToAdjust) {
+        const dateInput = document.getElementById('date');
+        let currentDate = new Date(dateInput.value);
+        if (isNaN(currentDate.getTime())) {
+            currentDate = new Date();
+        }
+        currentDate.setDate(currentDate.getDate() + daysToAdjust);
+        dateInput.value = formatDate(currentDate);
+    }
+
+    // --- ローカルストレージ連動型データ初期化 ---
+    let kakeiboData = JSON.parse(localStorage.getItem('kakeiboData')) || [];
+    let myCategories = JSON.parse(localStorage.getItem('myCategories')) || ['食費', '日用品', '交際費', '交通費', 'その他'];
+
+    // 貯金データ
+    let mySavingsBank = Number(localStorage.getItem('mySavingsBank')) || 100000;       
+    let mySavingsWallet = Number(localStorage.getItem('mySavingsWallet')) || 10000;     
+    let mySavingsCoin = Number(localStorage.getItem('mySavingsCoin')) || 0;       
+
+    // 貯金の目標設定
+    let targetBank = Number(localStorage.getItem('targetBank')) || 500000;
+    let targetWallet = Number(localStorage.getItem('targetWallet')) || 30000;
+    let targetCoin = Number(localStorage.getItem('targetCoin')) || 50000;
+
+    // 給料自動配分設定
+    let salaryAllocationType = localStorage.getItem('salaryAllocationType') || 'percent';
+    let salaryAllocationValue = Number(localStorage.getItem('salaryAllocationValue')) || 10;       
+
+    // クレカ初期設定（締め日・引き落とし日ルール）
+    let jcbLimit = Number(localStorage.getItem('jcbLimit')) || 300000;
+    let jcbRevoRemaining = Number(localStorage.getItem('jcbRevoRemaining')) || 0;
+    let jcbClosingDay = Number(localStorage.getItem('jcbClosingDay')) || 15; // 毎月15日締め
+    let jcbPayday = Number(localStorage.getItem('jcbPayday')) || 10;      // 翌月10日払い
+
+    let paypayLimit = Number(localStorage.getItem('paypayLimit')) || 300000;
+    let paypayRevoRemaining = Number(localStorage.getItem('paypayRevoRemaining')) || 0;
+    let paypayClosingDay = Number(localStorage.getItem('paypayClosingDay')) || 99; // 99は末日を指す
+    let paypayPayday = Number(localStorage.getItem('paypayPayday')) || 27;     // 翌月27日払い
+
+    // 履歴フィルター
+    let currentFilter = 'this-month';
+
+    const paymentLabels = {
+        'jcb': 'JCBカード',
+        'paypay': 'PayPayカード',
+        'bank': '口座から直接送金',
+        'cash': '現金'
+    };
+
+    // ローカルストレージにデータを保存する関数
+    function saveData() {
+        localStorage.setItem('kakeiboData', JSON.stringify(kakeiboData));
+        localStorage.setItem('myCategories', JSON.stringify(myCategories));
+        localStorage.setItem('mySavingsBank', mySavingsBank);
+        localStorage.setItem('mySavingsWallet', mySavingsWallet);
+        localStorage.setItem('mySavingsCoin', mySavingsCoin);
+        localStorage.setItem('targetBank', targetBank);
+        localStorage.setItem('targetWallet', targetWallet);
+        localStorage.setItem('targetCoin', targetCoin);
+        localStorage.setItem('salaryAllocationType', salaryAllocationType);
+        localStorage.setItem('salaryAllocationValue', salaryAllocationValue);
+        localStorage.setItem('jcbLimit', jcbLimit);
+        localStorage.setItem('jcbRevoRemaining', jcbRevoRemaining);
+        localStorage.setItem('jcbClosingDay', jcbClosingDay);
+        localStorage.setItem('jcbPayday', jcbPayday);
+        localStorage.setItem('paypayLimit', paypayLimit);
+        localStorage.setItem('paypayRevoRemaining', paypayRevoRemaining);
+        localStorage.setItem('paypayClosingDay', paypayClosingDay);
+        localStorage.setItem('paypayPayday', paypayPayday);
+    }
+
+    // --- 📅 引き落とし対象日の自動判定ロジック ---
+    // 利用日(dateStr)をもとに、その利用分がいつ引き落とされるかを年月（Dateオブジェクトの1日）で返す
+    function getBillingMonth(dateStr, closingDay, payday) {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return new Date();
+
+        const year = d.getFullYear();
+        const month = d.getMonth(); // 0-11
+        const day = d.getDate();
+
+        let billingYear = year;
+        let billingMonth = month;
+
+        // 締め日設定（99は月末締め）
+        const isEndMonth = (closingDay === 99);
+        
+        if (isEndMonth) {
+            // 月末締め：その月（month）の利用分はすべて「翌月」払い
+            billingMonth = month + 1;
+        } else {
+            // 指定日締め：その月の「締め日より後」の利用は「翌々月」払いになる
+            if (day > closingDay) {
+                billingMonth = month + 2;
+            } else {
+                billingMonth = month + 1;
+            }
+        }
+
+        if (billingMonth > 11) {
+            billingYear += Math.floor(billingMonth / 12);
+            billingMonth = billingMonth % 12;
+        }
+
+        return new Date(billingYear, billingMonth, 1);
+    }
+
+    // --- UIアップデート ＆ 表示機能 ---
+    function updateUI() {
+        saveData();
+
+        // 1. カテゴリセレクトボックスと管理リストの更新
+        const categorySelect = document.getElementById('category');
+        const prevSelected = categorySelect.value;
+        categorySelect.innerHTML = '';
+        myCategories.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat;
+            opt.textContent = cat;
+            categorySelect.appendChild(opt);
+        });
+        if (myCategories.includes(prevSelected)) {
+            categorySelect.value = prevSelected;
+        }
+
+        const categoryManageList = document.getElementById('category-manage-list');
+        categoryManageList.innerHTML = '';
+        myCategories.forEach((cat, idx) => {
+            const li = document.createElement('li');
+            li.className = 'category-manage-item';
+            li.innerHTML = `
+                <span>${cat}</span>
+                <button type="button" class="delete-btn" onclick="deleteCategory(${idx})">×</button>
+            `;
+            categoryManageList.appendChild(li);
+        });
+
+        // 2. クレカ設定入力項目の初期表示反映
+        document.getElementById('jcb-closing-day-display').textContent = `毎月 ${jcbClosingDay === 99 ? '末' : jcbClosingDay} 日`;
+        document.getElementById('jcb-payday-display').textContent = `毎月 ${jcbPayday} 日 (翌月)`;
+        document.getElementById('paypay-closing-day-display').textContent = `毎月 ${paypayClosingDay === 99 ? '末' : paypayClosingDay} 日`;
+        document.getElementById('paypay-payday-display').textContent = `毎月 ${paypayPayday} 日 (翌月)`;
+
+        // 3. クレカ計算処理
+        let jcbSpentThis = 0; // 次回請求対象分
+        let jcbSpentNext = 0; // 次々回請求対象分
+        let paypaySpentThis = 0;
+        let paypaySpentNext = 0;
+
+        const today = new Date();
+        // 現在基準の次回・次々回の支払い予定年月
+        const nextPayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1); // 翌月
+        const afterNextPayMonth = new Date(today.getFullYear(), today.getMonth() + 2, 1); // 翌々月
+
+        // 引き落とし日ラベルの日付を適用
+        document.getElementById('jcb-schedule-date-1').textContent = `${nextPayMonth.getMonth() + 1}/${jcbPayday}`;
+        document.getElementById('jcb-schedule-date-2').textContent = `${afterNextPayMonth.getMonth() + 1}/${jcbPayday}`;
+        document.getElementById('paypay-schedule-date-1').textContent = `${nextPayMonth.getMonth() + 1}/${paypayPayday}`;
+        document.getElementById('paypay-schedule-date-2').textContent = `${afterNextPayMonth.getMonth() + 1}/${paypayPayday}`;
+
+        kakeiboData.forEach(item => {
+            const amt = Number(item.amount);
+            if (item.payment === 'jcb') {
+                const billDate = getBillingMonth(item.date, jcbClosingDay, jcbPayday);
+                if (billDate.getFullYear() === nextPayMonth.getFullYear() && billDate.getMonth() === nextPayMonth.getMonth()) {
+                    jcbSpentThis += amt;
+                } else if (billDate.getFullYear() === afterNextPayMonth.getFullYear() && billDate.getMonth() === afterNextPayMonth.getMonth()) {
+                    jcbSpentNext += amt;
+                }
+            } else if (item.payment === 'paypay') {
+                const billDate = getBillingMonth(item.date, paypayClosingDay, paypayPayday);
+                if (billDate.getFullYear() === nextPayMonth.getFullYear() && billDate.getMonth() === nextPayMonth.getMonth()) {
+                    paypaySpentThis += amt;
+                } else if (billDate.getFullYear() === afterNextPayMonth.getFullYear() && billDate.getMonth() === afterNextPayMonth.getMonth()) {
+                    paypaySpentNext += amt;
+                }
+            }
+        });
+
+        const jcbTotal = jcbSpentThis + jcbSpentNext + jcbRevoRemaining;
+        const jcbAvailable = Math.max(0, jcbLimit - jcbTotal);
+        const paypayTotal = paypaySpentThis + paypaySpentNext + paypayRevoRemaining;
+        const paypayAvailable = Math.max(0, paypayLimit - paypayTotal);
+
+        document.getElementById('jcb-revo-display').textContent = jcbRevoRemaining.toLocaleString() + '円';
+        document.getElementById('jcb-total-display').textContent = jcbTotal.toLocaleString() + '円';
+        document.getElementById('jcb-limit-display').textContent = jcbLimit.toLocaleString() + '円';
+        document.getElementById('jcb-available-display').textContent = jcbAvailable.toLocaleString() + '円';
+        document.getElementById('jcb-schedule-amount-1').textContent = jcbSpentThis.toLocaleString() + '円';
+        document.getElementById('jcb-schedule-amount-2').textContent = jcbSpentNext.toLocaleString() + '円';
+
+        document.getElementById('paypay-revo-display').textContent = paypayRevoRemaining.toLocaleString() + '円';
+        document.getElementById('paypay-total-display').textContent = paypayTotal.toLocaleString() + '円';
+        document.getElementById('paypay-limit-display').textContent = paypayLimit.toLocaleString() + '円';
+        document.getElementById('paypay-available-display').textContent = paypayAvailable.toLocaleString() + '円';
+        document.getElementById('paypay-schedule-amount-1').textContent = paypaySpentThis.toLocaleString() + '円';
+        document.getElementById('paypay-schedule-amount-2').textContent = paypaySpentNext.toLocaleString() + '円';
+
+        // 4. 引き落とし警告アラートの表示
+        const alertArea = document.getElementById('credit-alert-area');
+        alertArea.innerHTML = '';
+        let totalIncomingWithdrawal = jcbSpentThis + paypaySpentThis;
+        if (totalIncomingWithdrawal > mySavingsBank) {
+            const shortAmt = totalIncomingWithdrawal - mySavingsBank;
+            alertArea.innerHTML = `
+                <div class="alert-card alert-danger">
+                    🚨 【警告】口座残高が不足しています！<br>
+                    次回引き落とし合計（JCB+PayPay）: ${totalIncomingWithdrawal.toLocaleString()}円 に対し、
+                    口座残高は ${mySavingsBank.toLocaleString()}円 です。（不足額: ${shortAmt.toLocaleString()}円）
+                </div>
+            `;
+        } else if (totalIncomingWithdrawal > 0) {
+            alertArea.innerHTML = `
+                <div class="alert-card alert-success">
+                    ✓ 次回のクレカ引き落とし合計（${totalIncomingWithdrawal.toLocaleString()}円）に必要な資金は、銀行口座（残高: ${mySavingsBank.toLocaleString()}円）に準備されています。
+                </div>
+            `;
+        }
+
+        // 5. 貯金データの表示
+        const totalSavings = mySavingsBank + mySavingsWallet + mySavingsCoin;
+        document.getElementById('savings-total-display').textContent = totalSavings.toLocaleString() + '円';
+        document.getElementById('savings-bank-display').textContent = mySavingsBank.toLocaleString() + '円';
+        document.getElementById('savings-wallet-display').textContent = mySavingsWallet.toLocaleString() + '円';
+        document.getElementById('savings-coin-display').textContent = mySavingsCoin.toLocaleString() + '円';
+        document.getElementById('savings-coin-count').textContent = Math.floor(mySavingsCoin / 500) + '枚';
+
+        document.getElementById('target-bank-val').textContent = targetBank.toLocaleString() + '円';
+        document.getElementById('target-wallet-val').textContent = targetWallet.toLocaleString() + '円';
+        document.getElementById('target-coin-val').textContent = targetCoin.toLocaleString() + '円';
+
+        // プログレスバー反映
+        const pctBank = targetBank > 0 ? Math.min(100, Math.round((mySavingsBank / targetBank) * 100)) : 0;
+        const pctWallet = targetWallet > 0 ? Math.min(100, Math.round((mySavingsWallet / targetWallet) * 100)) : 0;
+        const pctCoin = targetCoin > 0 ? Math.min(100, Math.round((mySavingsCoin / targetCoin) * 100)) : 0;
+
+        document.getElementById('pct-bank').textContent = pctBank + '%';
+        document.getElementById('pct-wallet').textContent = pctWallet + '%';
+        document.getElementById('pct-coin').textContent = pctCoin + '%';
+
+        document.getElementById('bar-bank').style.width = pctBank + '%';
+        document.getElementById('bar-wallet').style.width = pctWallet + '%';
+        document.getElementById('bar-coin').style.width = pctCoin + '%';
+
+        // 6. 履歴リスト＆分析の表示
+        renderHistory();
+        renderAnalysis();
+    }
+
+    // --- 履歴レンダリング ---
+    function renderHistory() {
+        const listContainer = document.getElementById('history-list');
+        listContainer.innerHTML = '';
+
+        const now = new Date();
+        const thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        
+        let lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+
+        // 日付の降順（新しい順）に並べ替え
+        const sortedData = [...kakeiboData].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        sortedData.forEach(item => {
+            const itemMonth = item.date.substring(0, 7); // "YYYY-MM"
+            
+            // フィルター条件判定
+            if (currentFilter === 'this-month' && itemMonth !== thisMonthStr) return;
+            if (currentFilter === 'last-month' && itemMonth !== lastMonthStr) return;
+
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.innerHTML = `
+                <div class="history-details">
+                    <span style="font-weight:700; font-size:14px;">[${item.category}]</span>
+                    <span class="history-payment">${item.date} / 支払: ${paymentLabels[item.payment] || item.payment}</span>
+                </div>
+                <div class="history-right">
+                    <span class="history-amount">${Number(item.amount).toLocaleString()}円</span>
+                    <button class="delete-btn" onclick="deleteHistoryItem('${item.id}')">×</button>
+                </div>
+            `;
+            listContainer.appendChild(li = div);
+        });
+
+        if (listContainer.innerHTML === '') {
+            listContainer.innerHTML = '<p style="text-align:center; font-size:12px; color:var(--text-muted); margin-top:15px;">該当する履歴はありません</p>';
+        }
+    }
+
+    function setFilter(filterType) {
+        currentFilter = filterType;
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`filter-${filterType}`).classList.add('active');
+        renderHistory();
+    }
+
+    // --- カテゴリ支出分析レンダリング ---
+    function renderAnalysis() {
+        const container = document.getElementById('category-analysis-container');
+        container.innerHTML = '';
+
+        const now = new Date();
+        const thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        // 今月の全支出を計算
+        let totalSpent = 0;
+        const categoryTotals = {};
+        myCategories.forEach(cat => categoryTotals[cat] = 0);
+
+        kakeiboData.forEach(item => {
+            const itemMonth = item.date.substring(0, 7);
+            if (itemMonth === thisMonthStr) {
+                const amt = Number(item.amount);
+                totalSpent += amt;
+                if (categoryTotals[item.category] !== undefined) {
+                    categoryTotals[item.category] += amt;
+                } else {
+                    categoryTotals[item.category] = amt;
+                }
+            }
+        });
+
+        if (totalSpent === 0) {
+            container.innerHTML = '<p style="text-align:center; font-size:12px; color:var(--text-muted); margin:0;">今月の支出データはまだありません</p>';
+            return;
+        }
+
+        // カテゴリ別支出を並べ替え
+        Object.entries(categoryTotals)
+            .sort((a, b) => b[1] - a[1])
+            .forEach(([cat, amount]) => {
+                if (amount === 0) return;
+                const pct = Math.round((amount / totalSpent) * 100);
+                const row = document.createElement('div');
+                row.className = 'category-row';
+                row.innerHTML = `
+                    <div class="category-header">
+                        <span>${cat} (${pct}%)</span>
+                        <span>${amount.toLocaleString()}円</span>
+                    </div>
+                    <div class="category-bar-bg">
+                        <div class="category-bar-fill" style="width: ${pct}%;"></div>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+    }
+
+    // --- 各種イベント処理 ---
+
+    // 家計簿の登録
+    document.getElementById('kakeibo-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const dateVal = document.getElementById('date').value;
+        const categoryVal = document.getElementById('category').value;
+        const paymentVal = document.getElementById('payment-method').value;
+        const amountVal = Number(document.getElementById('amount').value);
+
+        if (!categoryVal) {
+            alert('カテゴリを設定してください。先にカテゴリの追加が必要です。');
+            return;
+        }
+
+        // 資金源からマイナスする処理
+        if (paymentVal === 'bank') {
+            mySavingsBank -= amountVal;
+        } else if (paymentVal === 'cash') {
+            mySavingsWallet -= amountVal;
+        }
+
+        const newItem = {
+            id: 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            date: dateVal,
+            category: categoryVal,
+            payment: paymentVal,
+            amount: amountVal
+        };
+
+        kakeiboData.push(newItem);
+        document.getElementById('amount').value = '';
+        updateUI();
+    });
+
+    // 履歴アイテムの削除
+    function deleteHistoryItem(id) {
+        const itemIdx = kakeiboData.findIndex(item => item.id === id);
+        if (itemIdx > -1) {
+            const item = kakeiboData[itemIdx];
+            const amt = Number(item.amount);
+
+            // 削除時に資金源を戻す（返金処理）
+            if (item.payment === 'bank') {
+                mySavingsBank += amt;
+            } else if (item.payment === 'cash') {
+                mySavingsWallet += amt;
+            }
+
+            kakeiboData.splice(itemIdx, 1);
+            updateUI();
+        }
+    }
+
+    // 500円玉貯金への移行処理
+    document.getElementById('add-500-btn').addEventListener('click', function() {
+        if (mySavingsWallet >= 500) {
+            mySavingsWallet -= 500;
+            mySavingsCoin += 500;
+            updateUI();
+        } else {
+            alert('お財布の現金残高が500円未満のため、移行できません。');
+        }
+    });
+
+    // カテゴリ追加
+    document.getElementById('add-category-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const input = document.getElementById('new-category-input');
+        const newCat = input.value.trim();
+        if (newCat && !myCategories.includes(newCat)) {
+            myCategories.push(newCat);
+            input.value = '';
+            updateUI();
+        } else {
+            alert('既に存在しているか、無効なカテゴリ名です。');
+        }
+    });
+
+    // カテゴリ削除
+    function deleteCategory(index) {
+        const deletedCat = myCategories[index];
+        if (confirm(`カテゴリ「${deletedCat}」を削除しますか？`)) {
+            myCategories.splice(index, 1);
+            updateUI();
+        }
+    }
+
+    // 給料・配分処理
+    document.getElementById('salary-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const salaryAmt = Number(document.getElementById('salary-amount').value);
+        if (salaryAmt <= 0) return;
+
+        let walletAlloc = 0;
+        let bankAlloc = 0;
+
+        if (salaryAllocationType === 'percent') {
+            walletAlloc = Math.round(salaryAmt * (salaryAllocationValue / 100));
+        } else {
+            walletAlloc = salaryAllocationValue;
+        }
+
+        bankAlloc = salaryAmt - walletAlloc;
+
+        if (bankAlloc < 0) {
+            alert('お財布への配分金額が、入力された給与金額を超えています。');
+            return;
+        }
+
+        mySavingsBank += bankAlloc;
+        mySavingsWallet += walletAlloc;
+
+        document.getElementById('salary-amount').value = '';
+        alert(`給料（${salaryAmt.toLocaleString()}円）を自動配分しました！\n🏦 銀行口座: +${bankAlloc.toLocaleString()}円\n👛 お財布現金: +${walletAlloc.toLocaleString()}円`);
+        updateUI();
+    });
+
+       // 各目標額の設定
+    document.getElementById('target-settings-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const type = document.getElementById('target-type').value;
+        const amt = Number(document.getElementById('target-amount').value);
+
+        if (type === 'bank') targetBank = amt;
+        if (type === 'wallet') targetWallet = amt;
+        if (type === 'coin') targetCoin = amt;
+
+        document.getElementById('target-amount').value = '';
+        alert('目標金額を設定しました。');
+        updateUI();
+    });
+
+    // 手元の初期残高設定
+    document.getElementById('savings-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const type = document.getElementById('savings-type').value;
+        const amt = Number(document.getElementById('savings-input').value);
+
+        if (type === 'bank') mySavingsBank = amt;
+        if (type === 'wallet') mySavingsWallet = amt;
+        if (type === 'coin') mySavingsCoin = amt;
+
+        document.getElementById('savings-input').value = '';
+        alert('残高を手動更新しました。');
+        updateUI();
+    });
+
+    // クレカ設定更新
+    document.getElementById('credit-settings-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const target = document.getElementById('settings-target').value;
+        const limit = document.getElementById('settings-limit').value;
+        const revo = document.getElementById('settings-revo').value;
+        const closing = document.getElementById('settings-closingday').value;
+        const payday = document.getElementById('settings-payday').value;
+
+        if (target === 'jcb') {
+            if (limit) jcbLimit = Number(limit);
+            if (revo) jcbRevoRemaining = Number(revo);
+            if (closing) jcbClosingDay = Number(closing);
+            if (payday) jcbPayday = Number(payday);
+        } else {
+            if (limit) paypayLimit = Number(limit);
+            if (revo) paypayRevoRemaining = Number(revo);
+            if (closing) paypayClosingDay = Number(closing);
+            if (payday) paypayPayday = Number(payday);
+        }
+
+        // フォームクリア
+        document.getElementById('settings-limit').value = '';
+        document.getElementById('settings-revo').value = '';
+        document.getElementById('settings-closingday').value = '';
+        document.getElementById('settings-payday').value = '';
+
+        alert('クレジットカードの設定を更新しました。');
+        updateUI();
+    });
+
+    // 手動引き落としアクション
+    function payOffCard(cardType) {
+        let closingDay, payday, cardLabel;
+        if (cardType === 'jcb') {
+            closingDay = jcbClosingDay;
+            payday = jcbPayday;
+            cardLabel = 'JCB';
+        } else {
+            closingDay = paypayClosingDay;
+            payday = paypayPayday;
+            cardLabel = 'PayPay';
+        }
+
+        const today = new Date();
+        const nextPayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        
+        // 対象の引き落としデータを集計
+        let targetAmount = 0;
+        kakeiboData.forEach(item => {
+            if (item.payment === cardType) {
+                const billDate = getBillingMonth(item.date, closingDay, payday);
+                if (billDate.getFullYear() === nextPayMonth.getFullYear() && billDate.getMonth() === nextPayMonth.getMonth()) {
+                    targetAmount += Number(item.amount);
+                }
+            }
+        });
+
+        if (targetAmount === 0) {
+            alert(`次回の${cardLabel}カード引き落とし予定額は 0円 です。`);
+            return;
+        }
+
+        if (mySavingsBank < targetAmount) {
+            alert(`銀行口座残高（${mySavingsBank.toLocaleString()}円）が、引き落とし予定額（${targetAmount.toLocaleString()}円）に満たないため、引き落としを完了できません。口座にお金を入れてください。`);
+            return;
+        }
+
+        if (confirm(`銀行口座から ${targetAmount.toLocaleString()}円 を引き落とし（${cardLabel}の次回支払い分を清算）しますか？`)) {
+            // 銀行口座から残高をマイナス
+            mySavingsBank -= targetAmount;
+
+            // 履歴データから該当する支払い対象のデータを削除する（または精算フラグを立てるが、今回はシンプル化のためにデータを履歴から削除、もしくはそのまま表示を維持しつつ引き落とし対象から除外）
+            // 実装としては、次回引き落とし計算が狂わないように精算済みとして支払い方法を「精算済みのキャッシュ」に変換する、もしくは該当クレカのデータから除外する
+            kakeiboData = kakeiboData.filter(item => {
+                if (item.payment === cardType) {
+                    const billDate = getBillingMonth(item.date, closingDay, payday);
+                    const isTarget = (billDate.getFullYear() === nextPayMonth.getFullYear() && billDate.getMonth() === nextPayMonth.getMonth());
+                    return !isTarget; // 対象外（まだ未来の請求分）だけ残す
+                }
+                return true;
+            });
+
+            alert(`銀行口座から ${cardLabel} の代金（${targetAmount.toLocaleString()}円）を引き落としました！`);
+            updateUI();
+        }
+    }
+
+    document.getElementById('pay-off-jcb-btn').addEventListener('click', () => payOffCard('jcb'));
+    document.getElementById('pay-off-paypay-btn').addEventListener('click', () => payOffCard('paypay'));
+
+    // --- アプリの起動 ---
+    resetToToday();
+    toggleAllocationInputLabel();
+    updateUI();
+</script>
+</body>
+</html>
