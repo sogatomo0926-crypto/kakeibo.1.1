@@ -516,11 +516,11 @@
 
         <div class="history">
             <h2>履歴</h2>
-            <!-- 📅 履歴フィルター用ボタン -->
-            <div class="filter-container">
-                <button id="filter-this-month" class="filter-btn active" onclick="setFilter('this-month')">今月</button>
-                <button id="filter-last-month" class="filter-btn" onclick="setFilter('last-month')">先月</button>
-                <button id="filter-all" class="filter-btn" onclick="setFilter('all')">全期間</button>
+            <!-- 📅 年月選択プルダウンと全期間ボタン -->
+            <div class="filter-container" style="display: flex; gap: 8px; align-items: center; margin-bottom: 15px;">
+                <select id="filter-year" class="form-control" style="padding: 6px; width: 100px;" onchange="handlePeriodChange()"></select>
+                <select id="filter-month" class="form-control" style="padding: 6px; width: 80px;" onchange="handlePeriodChange()"></select>
+                <button type="button" id="filter-all-time" class="filter-btn" style="padding: 6px 12px;" onclick="setAllTime()">全期間</button>
             </div>
             <div id="history-list"></div>
         </div>
@@ -857,7 +857,9 @@ if (typeof toggleAllocationInputLabel !== 'function') {
 }
 
 // 履歴フィルター
-let currentFilter = 'this-month';
+let currentFilter = 'specified'; 
+let filterYear = new Date().getFullYear();
+let filterMonth = new Date().getMonth() + 1;
 
 const paymentLabels = {
     'jcb': 'JCBカード',
@@ -1099,19 +1101,17 @@ function renderHistory() {
     
     listContainer.innerHTML = '';
 
-    const now = new Date();
-    const thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    
-    let lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
-
     const sortedData = [...kakeiboData].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     sortedData.forEach(item => {
         const itemMonth = item.date.substring(0, 7); 
         
-        if (currentFilter === 'this-month' && itemMonth !== thisMonthStr) return;
-        if (currentFilter === 'last-month' && itemMonth !== lastMonthStr) return;
+        // 📅 新しいフィルター条件判定
+        if (currentFilter === 'specified') {
+            const targetMonthStr = `${filterYear}-${String(filterMonth).padStart(2, '0')}`;
+            if (itemMonth !== targetMonthStr) return; // 指定年月と違っていればスキップ
+        }
+        // currentFilter === 'all' (全期間) の場合は何も弾かずにすべて通します
 
         const memoText = item.memo ? `<span style="font-size:11px; color:#888; font-weight:normal; margin-left:6px;">(${item.memo})</span>` : '';
 
@@ -1135,14 +1135,51 @@ function renderHistory() {
     }
 }
 
-function setFilter(filterType) {
-    currentFilter = filterType;
-    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-    
-    const targetFilterBtn = document.getElementById(`filter-${filterType}`);
-    if (targetFilterBtn) targetFilterBtn.classList.add('active');
-    
+// 年月の選択肢を自動で作る関数
+function initPeriodFilter() {
+    const yearSelect = document.getElementById('filter-year');
+    const monthSelect = document.getElementById('filter-month');
+    if (!yearSelect || !monthSelect) return;
+
+    const currentYear = new Date().getFullYear();
+    yearSelect.innerHTML = '';
+    for (let y = currentYear; y >= currentYear - 3; y--) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y + '年';
+        yearSelect.appendChild(opt);
+    }
+
+    monthSelect.innerHTML = '';
+    for (let m = 1; m <= 12; m++) {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m + '月';
+        monthSelect.appendChild(opt);
+    }
+
+    yearSelect.value = filterYear;
+    monthSelect.value = filterMonth;
+}
+
+// プルダウンが変わった時の処理
+function handlePeriodChange() {
+    currentFilter = 'specified';
+    filterYear = Number(document.getElementById('filter-year').value);
+    filterMonth = Number(document.getElementById('filter-month').value);
+    const allTimeBtn = document.getElementById('filter-all-time');
+    if (allTimeBtn) allTimeBtn.classList.remove('active');
     renderHistory();
+    renderAnalysis();
+}
+
+// 全期間ボタンを押した時の処理
+function setAllTime() {
+    currentFilter = 'all';
+    const allTimeBtn = document.getElementById('filter-all-time');
+    if (allTimeBtn) allTimeBtn.classList.add('active');
+    renderHistory();
+    renderAnalysis();
 }
 
 // --- カテゴリ支出分析レンダリング ---
@@ -1152,8 +1189,8 @@ function renderAnalysis() {
     
     container.innerHTML = '';
 
-    const now = new Date();
-    const thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    // 📅 選択された年月（YYYY-MM形式）を作る
+    const targetMonthStr = `${filterYear}-${String(filterMonth).padStart(2, '0')}`;
 
     let totalSpent = 0;
     const categoryTotals = {};
@@ -1161,7 +1198,9 @@ function renderAnalysis() {
 
     kakeiboData.forEach(item => {
         const itemMonth = item.date.substring(0, 7);
-        if (itemMonth === thisMonthStr) {
+        
+        // 📅 全期間（all）か、もしくは選択した年月と一致する場合のみ集計する
+        if (currentFilter === 'all' || itemMonth === targetMonthStr) {
             const amt = Number(item.amount);
             totalSpent += amt;
             if (categoryTotals[item.category] !== undefined) {
@@ -1173,7 +1212,8 @@ function renderAnalysis() {
     });
 
     if (totalSpent === 0) {
-        container.innerHTML = '<p style="text-align:center; font-size:12px; color:var(--text-muted); margin:0;">今月の支出データはまだありません</p>';
+        const msg = currentFilter === 'all' ? '支出データはまだありません' : '選んだ月の支出データはまだありません';
+        container.innerHTML = `<p style="text-align:center; font-size:12px; color:var(--text-muted); margin:0;">${msg}</p>`;
         return;
     }
 
@@ -1197,6 +1237,7 @@ function renderAnalysis() {
         });
 }
 
+   
 // --- 各種イベント処理 ---
 
 // 給料をそのまま銀行残高（貯蓄）に加算する処理
@@ -1442,6 +1483,7 @@ if (payOffPaypayBtn) payOffPaypayBtn.addEventListener('click', () => payOffCard(
 // --- アプリの起動 ---
 document.addEventListener('DOMContentLoaded', () => {
     resetToToday();
+    initPeriodFilter();
     if (typeof toggleAllocationInputLabel === 'function') {
         toggleAllocationInputLabel();
     }
