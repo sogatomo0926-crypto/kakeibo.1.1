@@ -213,6 +213,7 @@
             opacity: 1;
         }
 
+     
         /* カード形式 */
         .card {
             background: var(--bg-primary);
@@ -482,6 +483,8 @@
                     <option value="paypay">PayPayカード</option>
                     <option value="bank">口座から直接送金</option>
                     <option value="cash">現金（財布から）</option>
+                    <option value="move_to_cash">💰 移動（銀行 ➔ お財布）</option>
+                    <option value="move_to_bank">💰 移動（お財布 ➔ 銀行）</option>
                 </select>
             </div>
             <div class="form-group">
@@ -865,7 +868,9 @@ const paymentLabels = {
     'jcb': 'JCBカード',
     'paypay': 'PayPayカード',
     'bank': '口座から直接送金',
-    'cash': '現金'
+    'cash': '現金',
+    'move_to_cash': '銀行 ➔ お財布',
+    'move_to_bank': 'お財布 ➔ 銀行'
 };
 
 // ローカルストレージにデータを保存する関数
@@ -958,6 +963,8 @@ function updateUI() {
             categoryManageList.appendChild(li);
         });
     }
+
+ 
 
     // 2. クレカ設定入力項目の初期表示反映
     const jcbClosingDisplay = document.getElementById('jcb-closing-day-display');
@@ -1092,7 +1099,7 @@ function updateUI() {
     // 6. 履歴リスト＆分析の表示
     renderHistory();
     renderAnalysis();
-}
+    }
 
 // --- 履歴レンダリング ---
 function renderHistory() {
@@ -1137,6 +1144,36 @@ function renderHistory() {
         listContainer.innerHTML = '<p style="text-align:center; font-size:12px; color:var(--text-muted); margin-top:15px;">該当する履歴はありません</p>';
     }
 }
+
+// 💡 編集中のデータのIDを記憶しておくための変数
+let editingItemId = null;
+
+// 💡 ✏️ボタンを押した時に、登録フォームへデータを移す関数
+function startEditHistoryItem(id) {
+    const item = kakeiboData.find(item => item.id === id);
+    if (!item) return;
+
+    // 1. 編集中のアイテムIDを記憶する
+    editingItemId = id;
+
+    // 2. フォームに選択したデータを戻す
+    document.getElementById('date').value = item.date;
+    document.getElementById('category').value = item.category;
+    document.getElementById('payment-method').value = item.payment;
+    document.getElementById('amount').value = item.amount;
+    document.getElementById('memo').value = item.memo || '';
+
+    // 3. 登録ボタンの文字を「変更を保存」に変えて、目立つ色にする
+    const submitBtn = document.querySelector('#kakeibo-form button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.textContent = '変更を保存する 💾';
+        submitBtn.style.backgroundColor = '#28a745'; // 緑色にして編集モードであることをわかりやすくします
+    }
+
+    // 4. 入力しやすいように画面を一番上（登録フォーム）までスクロールさせる
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 
 // 年月の選択肢を自動で作る関数
 function initPeriodFilter() {
@@ -1200,6 +1237,11 @@ function renderAnalysis() {
     myCategories.forEach(cat => categoryTotals[cat] = 0);
 
     kakeiboData.forEach(item => {
+        // 💡 資金移動（送金）の場合は、支出の集計から完全に除外（スルー）する
+        if (item.payment === 'move_to_cash' || item.payment === 'move_to_bank') {
+            return;
+        }
+
         const itemMonth = item.date.substring(0, 7);
         
         // 📅 全期間（all）か、もしくは選択した年月と一致する場合のみ集計する
@@ -1262,7 +1304,7 @@ if (salaryForm) {
     });
 }
 
-// 家計簿の登録
+// 家計簿の登録・および編集の上書き
 const kakeiboForm = document.getElementById('kakeibo-form');
 if (kakeiboForm) {
     kakeiboForm.addEventListener('submit', function(e) {
@@ -1278,22 +1320,86 @@ if (kakeiboForm) {
             return;
         }
 
-        if (paymentVal === 'bank') {
-            mySavingsBank -= amountVal;
-        } else if (paymentVal === 'cash') {
-            mySavingsWallet -= amountVal;
+        // 💡 編集モード（上書き）のとき
+        if (editingItemId) {
+            const itemIdx = kakeiboData.findIndex(item => item.id === editingItemId);
+            if (itemIdx > -1) {
+                const oldItem = kakeiboData[itemIdx];
+                const oldAmt = Number(oldItem.amount);
+
+                // ① 古いデータの残高影響を「元に戻す」
+                if (oldItem.payment === 'bank') {
+                    mySavingsBank += oldAmt;
+                } else if (oldItem.payment === 'cash') {
+                    mySavingsWallet += oldAmt;
+                } else if (oldItem.payment === 'move_to_cash') {
+                    mySavingsBank += oldAmt;
+                    mySavingsWallet -= oldAmt;
+                } else if (oldItem.payment === 'move_to_bank') {
+                    mySavingsWallet += oldAmt;
+                    mySavingsBank -= oldAmt;
+                }
+
+                // ② 新しい変更を残高に反映する
+                if (paymentVal === 'bank') {
+                    mySavingsBank -= amountVal;
+                } else if (paymentVal === 'cash') {
+                    mySavingsWallet -= amountVal;
+                } else if (paymentVal === 'move_to_cash') {
+                    mySavingsBank -= amountVal;
+                    mySavingsWallet += amountVal;
+                } else if (paymentVal === 'move_to_bank') {
+                    mySavingsWallet -= amountVal;
+                    mySavingsBank += amountVal;
+                }
+
+                // ③ データを上書きする
+                kakeiboData[itemIdx] = {
+                    id: editingItemId,
+                    date: dateVal,
+                    category: categoryVal,
+                    payment: paymentVal,
+                    amount: amountVal,
+                    memo: memoVal || ''
+                };
+
+                // 編集モード終了
+                editingItemId = null;
+
+                const submitBtn = document.querySelector('#kakeibo-form button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.textContent = '登録する';
+                    submitBtn.style.backgroundColor = '';
+                }
+            }
+        } 
+        // 💡 通常モード（新規追加）のとき
+        else {
+            if (paymentVal === 'bank') {
+                mySavingsBank -= amountVal;
+            } else if (paymentVal === 'cash') {
+                mySavingsWallet -= amountVal;
+            } else if (paymentVal === 'move_to_cash') {
+                mySavingsBank -= amountVal;
+                mySavingsWallet += amountVal;
+            } else if (paymentVal === 'move_to_bank') {
+                mySavingsWallet -= amountVal;
+                mySavingsBank += amountVal;
+            }
+
+            const newItem = {
+                id: 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                date: dateVal,
+                category: categoryVal,
+                payment: paymentVal,
+                amount: amountVal,
+                memo: memoVal || '' 
+            };
+
+            kakeiboData.push(newItem);
         }
 
-        const newItem = {
-            id: 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-            date: dateVal,
-            category: categoryVal,
-            payment: paymentVal,
-            amount: amountVal,
-            memo: memoVal || '' 
-        };
-
-        kakeiboData.push(newItem);
+        // 入力フォームを綺麗にして画面を更新
         document.getElementById('amount').value = '';
         document.getElementById('memo').value = ''; 
         updateUI();
@@ -1307,10 +1413,17 @@ function deleteHistoryItem(id) {
         const item = kakeiboData[itemIdx];
         const amt = Number(item.amount);
 
+        // 💡 削除されたデータの分、口座や現金の残高を「元に戻す」計算を行います
         if (item.payment === 'bank') {
             mySavingsBank += amt;
         } else if (item.payment === 'cash') {
             mySavingsWallet += amt;
+        } else if (item.payment === 'move_to_cash') {
+            mySavingsBank += amt;      // 減らした銀行残高を元に戻す
+            mySavingsWallet -= amt;    // 増やしたお財布現金を元に戻す
+        } else if (item.payment === 'move_to_bank') {
+            mySavingsWallet += amt;    // 減らしたお財布現金を元に戻す
+            mySavingsBank -= amt;      // 増やした銀行残高を元に戻す
         }
 
         kakeiboData.splice(itemIdx, 1);
