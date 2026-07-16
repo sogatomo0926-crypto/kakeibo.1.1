@@ -1124,7 +1124,10 @@ function renderHistory() {
             </div>
             <div class="history-right">
                 <span class="history-amount">${Number(item.amount).toLocaleString()}円</span>
-                <button class="delete-btn" onclick="deleteHistoryItem('${item.id}')">×</button>
+                <div style="display: flex; gap: 4px; align-items: center;">
+                    <button class="edit-btn" style="background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px;" onclick="startEditHistoryItem('${item.id}')">✏️</button>
+                    <button class="delete-btn" onclick="deleteHistoryItem('${item.id}')">×</button>
+                </div>
             </div>
         `;
         listContainer.appendChild(div);
