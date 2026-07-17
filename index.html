@@ -302,18 +302,21 @@
             right: 0;
             height: 60px;
             
-            background-color: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            border-top: 2px solid var(--border-color);
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
-            z-index: 1000;
-            
-            /* 👇 これを追加：ナビゲーションバー自体がブラウザのジェスチャー（ツールバー表示など）を邪魔しないようにします */
-            pointer-events: auto; 
+           /* 💡 高さ（height）と余白をスマホの画面のフチ（セーフエリア）に自動で合わせます */
+    height: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-sizing: border-box; /* 💡 これを入れることで崩れを防ぎます */
+    
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 2px solid var(--border-color);
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+    z-index: 1000;
+                    
         }
         .nav-item {
             background: none;
@@ -344,6 +347,11 @@
             margin-bottom: 14px;
             width: 100%;
         }
+
+        /* 家計簿の中身がナビゲーションボタンの裏に隠れないように、下に隙間を作ります */
+.container {
+    padding-bottom: 80px;
+}
 
         
         /* 500円チャリンボタン専用 */
@@ -446,6 +454,12 @@
         .schedule-row:last-child {
             border-bottom: none;
         }
+
+        /* スマホで左右にガタガタ動く（横スクロール）のを強制的に防止する */
+html, body {
+    overflow-x: hidden;
+    width: 100%;
+}
 </style>
 </head>
 <body>
