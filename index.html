@@ -28,7 +28,6 @@
             color: var(--text-main);
             margin: 0;
             padding: 0;
-            padding-bottom: 80px; /* 下部ナビ用の余白 */
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
         }
@@ -532,15 +531,33 @@ html, body {
         </div>
 
         <div class="history">
-            <h2>履歴</h2>
-            <!-- 📅 年月選択プルダウンと全期間ボタン -->
-            <div class="filter-container" style="display: flex; gap: 8px; align-items: center; margin-bottom: 15px;">
-                <select id="filter-year" class="form-control" style="padding: 6px; width: 100px;" onchange="handlePeriodChange()"></select>
-                <select id="filter-month" class="form-control" style="padding: 6px; width: 80px;" onchange="handlePeriodChange()"></select>
-                <button type="button" id="filter-all-time" class="filter-btn" style="padding: 6px 12px;" onclick="setAllTime()">全期間</button>
-            </div>
-            <div id="history-list"></div>
-        </div>
+    <h2>履歴</h2>
+    
+    <!-- 📅 1行目：年月選択プルダウンと全期間ボタン -->
+    <div class="filter-container" style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+        <select id="filter-year" class="form-control" style="padding: 6px; flex: 1;" onchange="handlePeriodChange()"></select>
+        <select id="filter-month" class="form-control" style="padding: 6px; flex: 1;" onchange="handlePeriodChange()"></select>
+        <button type="button" id="filter-all-time" class="filter-btn" style="padding: 6px 12px; width: auto;" onclick="setAllTime()">全期間</button>
+    </div>
+
+    <!-- 💡 2行目：カテゴリと支払い方法の絞り込み（新規追加） -->
+    <div class="filter-container" style="display: flex; gap: 8px; align-items: center; margin-bottom: 15px;">
+        <select id="history-category-filter" class="form-control" style="padding: 6px; flex: 1;" onchange="renderHistory()">
+            <option value="all">すべてのカテゴリ</option>
+            <!-- ※JavaScriptで追加されたカテゴリがここに自動で反映されるように連携します -->
+        </select>
+        
+        <select id="history-payment-filter" class="form-control" style="padding: 6px; flex: 1;" onchange="renderHistory()">
+            <option value="all">すべての支払い</option>
+            <option value="現金">現金</option>
+            <option value="銀行口座">銀行口座</option>
+            <option value="JCB">JCB</option>
+            <option value="PayPay">PayPay</option>
+        </select>
+    </div>
+
+    <div id="history-list"></div>
+</div>
     </div>
 
     <!-- 2ページ目：貯金額管理 -->
@@ -1111,6 +1128,7 @@ function updateUI() {
     if (barCoin) barCoin.style.width = pctCoin + '%';
 
     // 6. 履歴リスト＆分析の表示
+    updateHistoryCategoryFilter();
     renderHistory();
     renderAnalysis();
     }
@@ -1122,17 +1140,37 @@ function renderHistory() {
     
     listContainer.innerHTML = '';
 
+    // 💡 ドロップダウンから現在の選択値を取得（要素がない場合は 'all' にフォールバック）
+    const categoryFilterSelect = document.getElementById('history-category-filter');
+    const paymentFilterSelect = document.getElementById('history-payment-filter');
+    
+    const selectedCategory = categoryFilterSelect ? categoryFilterSelect.value : 'all';
+    const selectedPayment = paymentFilterSelect ? paymentFilterSelect.value : 'all';
+
     const sortedData = [...kakeiboData].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     sortedData.forEach(item => {
         const itemMonth = item.date.substring(0, 7); 
         
-        // 📅 新しいフィルター条件判定
+        // 📅 ① 年月フィルター判定
         if (currentFilter === 'specified') {
             const targetMonthStr = `${filterYear}-${String(filterMonth).padStart(2, '0')}`;
             if (itemMonth !== targetMonthStr) return; // 指定年月と違っていればスキップ
         }
-        // currentFilter === 'all' (全期間) の場合は何も弾かずにすべて通します
+
+        // 💡 ② カテゴリフィルター判定
+        if (selectedCategory !== 'all' && item.category !== selectedCategory) {
+            return; // 選択したカテゴリと違っていればスキップ
+        }
+
+        // 💡 ③ 支払い方法フィルター判定
+        if (selectedPayment !== 'all') {
+            // paymentLabels の変換値（例: "JCB" や "PayPay"）または内部データ（item.payment）と比較
+            const itemPaymentLabel = paymentLabels[item.payment] || item.payment;
+            if (item.payment !== selectedPayment && itemPaymentLabel !== selectedPayment) {
+                return; // 選択した支払い方法と違っていればスキップ
+            }
+        }
 
         const memoText = item.memo ? `<span style="font-size:11px; color:#888; font-weight:normal; margin-left:6px;">(${item.memo})</span>` : '';
 
@@ -1158,6 +1196,30 @@ function renderHistory() {
         listContainer.innerHTML = '<p style="text-align:center; font-size:12px; color:var(--text-muted); margin-top:15px;">該当する履歴はありません</p>';
     }
 }
+
+// 💡 履歴のカテゴリフィルター選択肢を自動生成する関数
+function updateHistoryCategoryFilter() {
+    const filterSelect = document.getElementById('history-category-filter');
+    if (!filterSelect) return;
+
+    // 現在選択されている値を覚えておく
+    const currentValue = filterSelect.value;
+
+    // 一旦クリアして初期選択肢を追加
+    filterSelect.innerHTML = '<option value="all">すべてのカテゴリ</option>';
+
+    // categories（またはお使いのカテゴリ配列名）から重複なく選択肢を追加
+    myCategories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        filterSelect.appendChild(option);
+    });
+
+    // 以前選んでいた値があれば復元する
+    filterSelect.value = currentValue || 'all';
+}
+
 
 // 💡 編集中のデータのIDを記憶しておくための変数
 let editingItemId = null;
