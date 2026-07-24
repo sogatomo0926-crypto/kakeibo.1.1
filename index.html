@@ -547,13 +547,13 @@ html, body {
             <!-- ※JavaScriptで追加されたカテゴリがここに自動で反映されるように連携します -->
         </select>
         
-        <select id="history-payment-filter" class="form-control" style="padding: 6px; flex: 1;" onchange="renderHistory()">
-            <option value="all">すべての支払い</option>
-            <option value="現金">現金</option>
-            <option value="銀行口座">銀行口座</option>
-            <option value="JCB">JCB</option>
-            <option value="PayPay">PayPay</option>
-        </select>
+       <select id="history-payment-filter" class="form-control" style="padding: 6px; flex: 1;" onchange="renderHistory()">
+    <option value="all">すべての支払い</option>
+    <option value="cash">現金</option>
+    <option value="bank">銀行口座</option>
+    <option value="jcb">JCB</option>
+    <option value="paypay">PayPay</option>
+</select>
     </div>
 
     <div id="history-list"></div>
